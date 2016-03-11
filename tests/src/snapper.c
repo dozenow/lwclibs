@@ -4,24 +4,26 @@
 
 #ifdef SNAP_DIAGNOSTIC
 
-int snap(snap_id_t sid, int flags) {
-	printf("called snap(%d,%d)=\n", sid, flags);
-	int ret = syscall(547, sid, flags);
-	printf("\t%d\n", ret);
+snap_id_t snap(snap_id_t dest, snap_id_t *src, int flags) {
+	printf("called snap(%d,%s,%d)=\n", dest, src ? "NON_NULL" : "NULL", flags);
+	int ret = syscall(547, dest, src, flags);
+	printf("\tnewsnap =>%d, src snap => %d\n", ret, src ? *src : -1);
 	return ret;
 }
 
-int snap_jump(snap_id_t sid) {
-	printf("called snap(%d,%d) (snap_jump)=\n", sid, 0);
-	int ret = syscall(547, sid, 0);
-	printf("\t%d\n", ret);
+snap_id_t snap_jump(snap_id_t dest) {
+	snap_id_t src;
+	printf("called snap(%d,*,0) (snap_jump)=\n", dest);
+	int ret = syscall(547, dest, &src, 0);
+	printf("\tnewsnap =>%d, src snap => %d\n", ret, src);
 	return ret;
 }
 
-int snap_take() {
-	printf("called snap(%d,%d) (snap_take)=\n ", SNAP_NOJUMP, SNAP_TAKE_SNAP);
-	int ret = syscall(547, SNAP_NOJUMP, SNAP_TAKE_SNAP);
-	printf("\t%d\n", ret);
+snap_id_t snap_take() {
+	snap_id_t src;
+	printf("called snap(SNAP_TARGET_NOJUMP,*, SNAP_CREATE) (snap_take)=\n ");
+	int ret = syscall(547, SNAP_TARGET_NOJUMP, &src, SNAP_CREATE);
+	printf("\tnewsnap =>%d, src snap => %d\n", ret, src);
 	return ret;
 }
 
