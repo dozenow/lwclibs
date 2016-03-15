@@ -36,7 +36,7 @@ int main() {
 	snap_id_t late_src = -1;
 	snap_id_t src = -1;
 	snap_id_t new_snap;
-	new_snap = snap(SNAP_TARGET_NOJUMP, &src, SNAP_CREATE);
+	new_snap = snap(SNAP_TARGET_NOJUMP, &src, SNAP_VM);
 
 	if (new_snap > 0) { // created a snap
 		sbuf[0] = new_snap;
@@ -68,7 +68,7 @@ int main() {
 		return 6;
 	}
 
-	new_snap = snap(sbuf[0], &late_src, SNAP_CREATE);
+	new_snap = snap(sbuf[0], &late_src, SNAP_VM);
 	if (new_snap != 0 && sbuf[0] != 1 && sbuf[1] != 10) {
 		fprintf(stderr, "unexpected finish, new snap is %d and late src is %d and sbuf[0] is %d, sbuf[1] is %d\n", new_snap, late_src, sbuf[0], sbuf[1]);
 		return 4;

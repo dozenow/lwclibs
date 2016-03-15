@@ -14,6 +14,20 @@
 
 #include "snapper.h"
 
+
+struct timespec diff(struct timespec *start, struct timespec *end)
+{
+	struct timespec temp;
+	if ((end->tv_nsec-start->tv_nsec)<0) {
+		temp.tv_sec = end->tv_sec-start->tv_sec-1;
+		temp.tv_nsec = 1000000000+end->tv_nsec-start->tv_nsec;
+	} else {
+		temp.tv_sec = end->tv_sec-start->tv_sec;
+		temp.tv_nsec = end->tv_nsec-start->tv_nsec;
+	}
+	return temp;
+}
+
 int main() {
 
 	char *mbuf = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
@@ -31,17 +45,23 @@ int main() {
 	}
 
 
-	/* holy shit this stuff is confusing */
 
 	char stackbuf[4096];
 
 	memset(mbuf, 1, 4096);
 	memset(stackbuf, 1, 4096);
 
+	
+	int sock[2];
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sock) != 0) {
+		perror("Could not socket pair");
+		return EXIT_FAILURE;
+	}
+
+
 	sbuf[0] = snap_take();
-	if (sbuf[1]) {
-		// been here, got snapped back. Only the child does this. Where
-		// is our socket? Stuffed in sbuf[2]
+	if (sbuf[0] == 0) {
+		// been here, got snapped back. 
 
 		// verify buffers now in presnap state.
 		for(size_t i = 4096; i < 4096; ++i) {
@@ -55,13 +75,13 @@ int main() {
 		memset(mbuf, 88, 4096);
 		memset(stackbuf, 88, 4096);
 
-		if (write(sbuf[2], mbuf, 1) != 1) { 
-			fprintf(stderr, "Lost file %d : %s?\n", sbuf[2], strerror(errno));
+		if (write(sock[1], mbuf, 1) != 1) { 
+			fprintf(stderr, "Lost file %d : %s\n", sock[1], strerror(errno));
 			return EXIT_FAILURE;
 		}
 
 		
-		read(sbuf[2], &sbuf[10], 1);
+		read(sock[1], &sbuf[10], 1);
 
 		
 		for(size_t i = 4096; i < 4096; ++i) {
@@ -75,20 +95,25 @@ int main() {
 	}
 	sbuf[1] = 1;
 
-	int sock[2];
-	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sock) != 0) {
-		perror("Could not socket pair");
-		return EXIT_FAILURE;
-	}
+	FILE *fp = fopen("/tmp/fork_timings.txt", "a");
 
+	struct timespec start, end;
+
+	clock_gettime(CLOCK_REALTIME, &start);
 
 	pid_t pid = fork();
 
 	if (pid) {
+		clock_gettime(CLOCK_REALTIME, &end);
+
+		struct timespec res = diff(&start, &end);
 		/* am parent */
 		memset(mbuf, 2, 4096);
 		memset(stackbuf, 2, 4096);
 
+		fprintf(fp, "p %ld %lu ", res.tv_sec, res.tv_nsec);
+		fclose(fp);
+		
 		write(sock[0], &pid, 1); /* don't care what I'm writing, just using the pipe as a signal mechanism */
 
 		/* wait for child checks and to modify buffers */
@@ -131,7 +156,14 @@ int main() {
 		
 	}  else {
 
+		clock_gettime(CLOCK_REALTIME, &end);
+
+		struct timespec res = diff(&start, &end);
+		
 		read(sock[1], &pid, 1); // just wait for parent to send go signal
+
+		fprintf(fp, "c %ld %lu\n", res.tv_sec, res.tv_nsec);
+		fclose(fp);
 
 	
 		for(size_t i = 4096; i < 4096; ++i) {
@@ -148,8 +180,6 @@ int main() {
 
 		read(sock[1], &pid, 1);
 
-		// okay, got signal that I can jump back. Preserve state into a shared buffer and jump
-		sbuf[2] = sock[1];
 		snap_jump(sbuf[0]);
 
 		fprintf(stderr, "present after jump\n");

@@ -10,7 +10,8 @@
 typedef int snap_id_t;
 
 #define SNAP_TARGET_NOJUMP 0x0 
-#define SNAP_CREATE 0x1
+#define SNAP_VM 0x1
+#define SNAP_FD 0x2
 
 #ifdef SNAP_DIAGNOSTIC
 
@@ -22,7 +23,7 @@ snap_id_t snap(snap_id_t dest, snap_id_t *src, int flags);
 
 #define snap(dest, src, flags) syscall(547, dest, src, flags)
 #define snap_jump(dest) syscall(547, dest, NULL, 0)
-#define snap_take() syscall(547, SNAP_TARGET_NOJUMP, NULL, SNAP_CREATE);
+#define snap_take() syscall(547, SNAP_TARGET_NOJUMP, NULL, SNAP_VM | SNAP_FD);
 
 #endif
 
