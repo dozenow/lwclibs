@@ -5,7 +5,6 @@
 #include <string.h>
 #include <strings.h>
 #include <stdlib.h>
-#include <stdlib.h>
 #include <time.h>
 
 #include "snapper.h"
