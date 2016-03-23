@@ -1,0 +1,9 @@
+*~
+.depends*
+correct1
+fork
+ssl_snap_server
+ssl_snap_client
+correct_shared
+switcher
+switcher_pthread

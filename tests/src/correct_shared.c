@@ -12,6 +12,9 @@
 
 int main() {
 
+	fprintf(stderr, "Program doesn't test current semantics. Not a valid test\n");
+	return 0;
+
 	char *mbuf = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 	if (mbuf == MAP_FAILED) {
 		perror("Can't mmap. So many tears\n");

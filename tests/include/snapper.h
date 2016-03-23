@@ -2,30 +2,63 @@
 #define SNAPPER_H
 
 #include <sys/syscall.h>
+#include <stdlib.h>
 #include <unistd.h>
 
-#define SNAP_DIAGNOSTIC
+//#define SNAP_DIAGNOSTIC
 
+#ifdef __cplusplus
+namespace snapper {
+extern "C" {
+#endif
 
 typedef int snap_id_t;
 
-#define SNAP_TARGET_NOJUMP 0x0 
-#define SNAP_VM 0x1
-#define SNAP_FD 0x2
+/* special targets */
+#define SNAP_TARGET_NOJUMP 0x0000
+
+/* snap flags  */
+#define SNAP_VM     0x0001
+#define SNAP_FD     0x0002
+#define SNAP_SHARED 0x0004
+#define SNAP_UPDATE 0x0008
+#define SNAP_CRED   0x0010
 
 #ifdef SNAP_DIAGNOSTIC
 
-snap_id_t snap_jump(snap_id_t dest);
-snap_id_t snap_take();
 snap_id_t snap(snap_id_t dest, snap_id_t *src, int flags);
 
 #else
 
 #define snap(dest, src, flags) syscall(547, dest, src, flags)
-#define snap_jump(dest) syscall(547, dest, NULL, 0)
-#define snap_take() syscall(547, SNAP_TARGET_NOJUMP, NULL, SNAP_VM | SNAP_FD);
 
 #endif
+
+#define snap_jump(dest) snap(dest, NULL, 0)
+#define snap_take() snap(SNAP_TARGET_NOJUMP, NULL, SNAP_VM | SNAP_FD);
+
+
+inline snap_id_t Snap(snap_id_t dest, snap_id_t *src, int flags) {
+	int rv = snap(dest, src, flags);
+	if (rv < 0) {
+#ifdef __cplusplus
+		throw strerror(errno);
+#else
+		perror("snap");
+		abort();
+#endif
+	}
+	return rv;
+}
+
+
+
+#ifdef __cplusplus
+}
+};
+#endif
+
+
 
 
 #endif
