@@ -1,11 +1,10 @@
 include ../Makefile.inc
 
 VPATH=.:src:include
-SRCS = src/correct1.c src/snapper.c src/fork.c
 DEPFILE = .depends
 
 
-build-all : correct1 fork ssl_snap_server ssl_snap_client correct_shared switcher switcher_pthread
+build-all : correct1 fork ssl_snap_server ssl_snap_client switcher switcher_pthread
 
 ssl_snap_server: src/ssl_snap_server.o src/snap_ssl.o src/shared_malloc.o src/snapper.o
 	$(CXX) $(CXXFLAGS) $> -o $@ -lssl -lcrypto

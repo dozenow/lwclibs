@@ -17,12 +17,19 @@ typedef int snap_id_t;
 /* special targets */
 #define SNAP_TARGET_NOJUMP 0x0000
 
+
 /* snap flags  */
-#define SNAP_VM     0x0001
-#define SNAP_FD     0x0002
-#define SNAP_SHARED 0x0004
-#define SNAP_UPDATE 0x0008
-#define SNAP_CRED   0x0010
+#define SNAP_NO_VM     0x0001
+#define SNAP_NO_FD     0x0002
+#define SNAP_NO_CRED   0x0004
+#define SNAP_SHARED    0x0008
+#define SNAP_UPDATE    0x0010
+
+#define SNAP_ALL (0)
+
+#define SNAP_NOTHING (SNAP_NO_VM|SNAP_NO_FD|SNAP_NO_CRED)
+#define SNAP_NONE SNAP_NOTHING
+
 
 #ifdef SNAP_DIAGNOSTIC
 
@@ -34,8 +41,8 @@ snap_id_t snap(snap_id_t dest, snap_id_t *src, int flags);
 
 #endif
 
-#define snap_jump(dest) snap(dest, NULL, 0)
-#define snap_take() snap(SNAP_TARGET_NOJUMP, NULL, SNAP_VM | SNAP_FD);
+#define snap_jump(dest) snap(dest, NULL, SNAP_NOTHING)
+#define snap_take() snap(SNAP_TARGET_NOJUMP, NULL, SNAP_ALL);
 
 
 inline snap_id_t Snap(snap_id_t dest, snap_id_t *src, int flags) {

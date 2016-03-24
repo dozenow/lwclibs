@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
 	snap_id_t *snaps = MCHK<snap_id_t>(sh_malloc(sizeof(snaps[0]) * 6));
 
 
-	snap_id_t ns = Snap(SNAP_TARGET_NOJUMP, NULL, SNAP_VM|SNAP_FD);
+	snap_id_t ns = Snap(SNAP_TARGET_NOJUMP, NULL, SNAP_ALL);
 
 	if (ns > 0) {
 		snaps[0] = ns;
@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
 		// do work and then jump to first child.
 		cout << "I am the parent, pretend that I've done something\n";
 		sleep(1);
-		snap(snaps[1], NULL, 0);
+		snap(snaps[1], NULL, SNAP_NOTHING);
 	}
 
 	ssl::server s;
@@ -89,10 +89,9 @@ int main(int argc, char *argv[]) {
 		if (ssock) {
 			//if (fd >= 0) {
 			
-
 			int *counter = MCHK<int>(sh_malloc(sizeof(*counter)));
 			*counter = 0;
-			snap_id_t ns = Snap(SNAP_TARGET_NOJUMP, NULL, SNAP_VM|SNAP_FD);
+			snap_id_t ns = Snap(SNAP_TARGET_NOJUMP, NULL, SNAP_ALL);
 
 			if (ns > 0) {
 				snaps[child_id] = ns;;
@@ -104,7 +103,7 @@ int main(int argc, char *argv[]) {
 					exit(1);
 				}
 
-				snap(snaps[(child_id + 1) % 5], NULL, 0);
+				snap(snaps[(child_id + 1) % 5], NULL, SNAP_NOTHING);
 			}
 		} else {
 			cerr << "failure making sock\n";
