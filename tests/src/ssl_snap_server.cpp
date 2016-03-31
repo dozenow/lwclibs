@@ -64,10 +64,10 @@ int main(int argc, char *argv[]) {
 	Listen(mom, 5);
 
 
-	snap_id_t *snaps = MCHK<snap_id_t>(sh_malloc(sizeof(snaps[0]) * 6));
+	int *snaps = MCHK<int>(sh_malloc(sizeof(snaps[0]) * 6));
 
 
-	snap_id_t ns = Snap(SNAP_TARGET_NOJUMP, NULL, SNAP_ALL);
+	int ns = Snap(SNAP_TARGET_NOJUMP, NULL, SNAP_ALL);
 
 	if (ns > 0) {
 		snaps[0] = ns;
@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
 			
 			int *counter = MCHK<int>(sh_malloc(sizeof(*counter)));
 			*counter = 0;
-			snap_id_t ns = Snap(SNAP_TARGET_NOJUMP, NULL, SNAP_ALL);
+			int ns = Snap(SNAP_TARGET_NOJUMP, NULL, SNAP_ALL);
 
 			if (ns > 0) {
 				snaps[child_id] = ns;;

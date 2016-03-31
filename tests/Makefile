@@ -3,7 +3,6 @@ include ../Makefile.inc
 VPATH=.:src:include
 DEPFILE = .depends
 
-
 build-all : correct1 fork ssl_snap_server ssl_snap_client switcher switcher_pthread
 
 ssl_snap_server: src/ssl_snap_server.o src/snap_ssl.o src/shared_malloc.o src/snapper.o
@@ -32,7 +31,7 @@ clean:
 
 depend:
 	truncate -s 0 $(DEPFILE)
-	makedepend -Y -f $(DEPFILE) -- $(CFLAGS) -- $(SRCS)
+	makedepend -Y -f $(DEPFILE) -- -Iinclude -- src/*.c src/*.cpp
 
 
 .PHONY: depend build-all

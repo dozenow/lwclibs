@@ -10,6 +10,7 @@
 
 #include <iostream>
 
+//#define SNAP_DIAGNOSTIC
 #include "netwrap.hpp"
 #include "snapper.h"
 
@@ -42,9 +43,9 @@ void child_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
 	clock_gettime(CLOCK_REALTIME, &start);
 
 	while(private_buf[1] < 10000) {
-		snap_id_t src;
+		int src;
 		stack_buf[1] = private_buf[1] = (private_buf[1]+1);
-		snap_id_t ns = Snap(shared_buf[IDX_ORIG], &src, SNAP_SHARED | SNAP_UPDATE | SNAP_ALL);
+		int ns = Snap(shared_buf[IDX_ORIG], NULL, SNAP_SHARED | SNAP_UPDATE | SNAP_NO_FD | SNAP_NO_CRED);
 #if 0
 		cerr << "In child with ns=" << ns << " and src=" << src << " with stack_buf and private buf = " << (int)stack_buf[1] << ' ' << (int)private_buf[1] << endl;
 		cerr << "Child UID is " << getuid() << " and capped: " << (bool) cap_sandboxed() << endl;
@@ -68,9 +69,10 @@ void child_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
 
 
 void parent_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
+	int i = 0;
 	for(;;) {
-		snap_id_t src;
-		snap_id_t ns = Snap(shared_buf[IDX_CHLD], &src, SNAP_SHARED | SNAP_UPDATE | SNAP_ALL);
+		int src;
+		int ns = Snap(shared_buf[IDX_CHLD], NULL, SNAP_SHARED | SNAP_UPDATE | SNAP_NO_FD | SNAP_NO_CRED);
 #if 0
 		cerr << "In parent with ns=" << ns << " and src=" << src << " with stack_buf and private buf = " << (int)stack_buf[1] << ' ' << (int) private_buf[1] << endl;
 		cerr << "Parent UID is " << getuid() << " and capped: " << (bool) cap_sandboxed() << endl;
@@ -81,6 +83,7 @@ void parent_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
 			perror("file open in parent: ");
 		} else {
 			close(fd);
+			unlink("/tmp/foobar");
 		}
 #endif
 
@@ -112,9 +115,11 @@ int main(int argc, char *argv[]) {
 	memset(shared_buf, 0, 4096);
 	memset(stack_buf, 0, 4096);
 
-	snap_id_t src,cur;
-	cur = Snap(SNAP_TARGET_NOJUMP, &src, SNAP_ALL);
-	if (cur > 0) {
+	shared_buf[IDX_CHLD] = -1;
+
+	int src,cur;
+	cur = Snap(SNAP_TARGET_NOJUMP, NULL, SNAP_ALL | SNAP_NO_FD);
+	if (cur >= 0) {
 		shared_buf[IDX_ORIG] = cur;
 
 		setuid(1001);
@@ -125,8 +130,8 @@ int main(int argc, char *argv[]) {
 
 		// create child context
 
-		cur = Snap(SNAP_TARGET_NOJUMP, &src, SNAP_SHARED | SNAP_ALL); //can't actually get back here!
-		if (cur > 0) {
+		cur = Snap(SNAP_TARGET_NOJUMP, NULL, SNAP_SHARED | SNAP_NO_FD ); //can't actually get back here!
+		if (cur >= 0) {
 			shared_buf[IDX_CHLD] = cur;
 		} 
 
@@ -134,9 +139,9 @@ int main(int argc, char *argv[]) {
 		cerr << "Child improperly exited?" << endl;
 		exit(1);
 			
-	} else if (cur == 0) {
-		cur = Snap(SNAP_TARGET_NOJUMP, &src, SNAP_SHARED | SNAP_ALL); //to set up parent fast jumper
-		if (cur > 0) {
+	} else if (cur == SNAP_JUMPED) {
+		cur = Snap(SNAP_TARGET_NOJUMP, NULL, SNAP_SHARED | SNAP_NO_FD ); //to set up parent fast jumper
+		if (cur >= 0) {
 			shared_buf[IDX_ORIG] = cur;
 		}
 

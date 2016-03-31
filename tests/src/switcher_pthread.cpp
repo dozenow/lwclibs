@@ -112,7 +112,6 @@ int main(int argc, char *argv[]) {
 	//pthread_attr_init(&attr);
 	pthread_create(&child_thr, NULL, child_work_function, private_buf);
 
-	cerr << "doing parent\n";
 	for(;;) {
 		parent_work_function();
 	}

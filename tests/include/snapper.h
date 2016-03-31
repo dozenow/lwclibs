@@ -12,10 +12,8 @@ namespace snapper {
 extern "C" {
 #endif
 
-typedef int snap_id_t;
-
 /* special targets */
-#define SNAP_TARGET_NOJUMP 0x0000
+#define SNAP_TARGET_NOJUMP (-1)
 
 
 /* snap flags  */
@@ -30,24 +28,19 @@ typedef int snap_id_t;
 #define SNAP_NOTHING (SNAP_NO_VM|SNAP_NO_FD|SNAP_NO_CRED)
 #define SNAP_NONE SNAP_NOTHING
 
+#define SNAP_JUMPED (-1)
+#define SNAP_FAILED (-2)
+
+
+int debug_snap(int dest, int *src, int flags);
 
 #ifdef SNAP_DIAGNOSTIC
 
-snap_id_t snap(snap_id_t dest, snap_id_t *src, int flags);
+#define snap debug_snap
 
-#else
-
-#define snap(dest, src, flags) syscall(547, dest, src, flags)
-
-#endif
-
-#define snap_jump(dest) snap(dest, NULL, SNAP_NOTHING)
-#define snap_take() snap(SNAP_TARGET_NOJUMP, NULL, SNAP_ALL);
-
-
-inline snap_id_t Snap(snap_id_t dest, snap_id_t *src, int flags) {
-	int rv = snap(dest, src, flags);
-	if (rv < 0) {
+inline int Snap(int dest, int *src, int flags) {
+	int rv = debug_snap(dest, src, flags);
+	if (rv == SNAP_FAILED) {
 #ifdef __cplusplus
 		throw strerror(errno);
 #else
@@ -57,6 +50,31 @@ inline snap_id_t Snap(snap_id_t dest, snap_id_t *src, int flags) {
 	}
 	return rv;
 }
+
+#else
+
+#define snap(dest, src, flags) syscall(547, dest, src, flags)
+
+inline int Snap(int dest, int *src, int flags) {
+	int rv = snap(dest, src, flags);
+	if (rv == SNAP_FAILED) {
+#ifdef __cplusplus
+		throw strerror(errno);
+#else
+		perror("snap");
+		abort();
+#endif
+	}
+	return rv;
+}
+
+
+#endif
+
+#define snap_jump(dest) snap(dest, NULL, SNAP_NOTHING)
+#define snap_take() snap(SNAP_TARGET_NOJUMP, NULL, SNAP_ALL);
+
+
 
 
 

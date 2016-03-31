@@ -1,5 +1,8 @@
 
 build-all:
-	make -C tests
+	make -C tests build-all
 
-.PHONY: build-all
+clean:
+	make -C tests clean
+
+.PHONY: build-all clean

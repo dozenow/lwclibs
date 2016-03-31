@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <sys/socket.h>
 
+#define SNAP_DIAGNOSTIC
 #include "snapper.h"
 
 
@@ -60,7 +61,7 @@ int main() {
 
 
 	sbuf[0] = snap_take();
-	if (sbuf[0] == 0) {
+	if (sbuf[0] == SNAP_JUMPED) {
 		// been here, got snapped back. 
 
 		// verify buffers now in presnap state.
@@ -92,6 +93,9 @@ int main() {
 		}
 
 		return EXIT_SUCCESS;
+	} else if (sbuf[0] == SNAP_FAILED) {
+		perror("Snap failure: ");
+		return EXIT_FAILURE;
 	}
 	sbuf[1] = 1;
 
