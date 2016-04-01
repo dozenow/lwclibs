@@ -45,7 +45,7 @@ void child_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
 	while(private_buf[1] < 10000) {
 		int src;
 		stack_buf[1] = private_buf[1] = (private_buf[1]+1);
-		int ns = Snap(shared_buf[IDX_ORIG], NULL, SNAP_SHARED | SNAP_UPDATE | SNAP_NO_FD | SNAP_NO_CRED);
+		int ns = Snap(shared_buf[IDX_ORIG], NULL, SNAP_UPDATE | SNAP_SHARE_ALL);
 #if 0
 		cerr << "In child with ns=" << ns << " and src=" << src << " with stack_buf and private buf = " << (int)stack_buf[1] << ' ' << (int)private_buf[1] << endl;
 		cerr << "Child UID is " << getuid() << " and capped: " << (bool) cap_sandboxed() << endl;
@@ -72,7 +72,7 @@ void parent_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
 	int i = 0;
 	for(;;) {
 		int src;
-		int ns = Snap(shared_buf[IDX_CHLD], NULL, SNAP_SHARED | SNAP_UPDATE | SNAP_NO_FD | SNAP_NO_CRED);
+		int ns = Snap(shared_buf[IDX_CHLD], NULL, SNAP_UPDATE | SNAP_SHARE_ALL);
 #if 0
 		cerr << "In parent with ns=" << ns << " and src=" << src << " with stack_buf and private buf = " << (int)stack_buf[1] << ' ' << (int) private_buf[1] << endl;
 		cerr << "Parent UID is " << getuid() << " and capped: " << (bool) cap_sandboxed() << endl;
@@ -118,7 +118,7 @@ int main(int argc, char *argv[]) {
 	shared_buf[IDX_CHLD] = -1;
 
 	int src,cur;
-	cur = Snap(SNAP_TARGET_NOJUMP, NULL, SNAP_ALL | SNAP_NO_FD);
+	cur = Snap(SNAP_TARGET_NOJUMP, NULL, SNAP_SHARE_FD);
 	if (cur >= 0) {
 		shared_buf[IDX_ORIG] = cur;
 
@@ -130,7 +130,7 @@ int main(int argc, char *argv[]) {
 
 		// create child context
 
-		cur = Snap(SNAP_TARGET_NOJUMP, NULL, SNAP_SHARED | SNAP_NO_FD ); //can't actually get back here!
+		cur = Snap(SNAP_TARGET_NOJUMP, NULL, SNAP_UPDATEABLE | SNAP_SHARE_ALL); //can't actually get back here!
 		if (cur >= 0) {
 			shared_buf[IDX_CHLD] = cur;
 		} 
@@ -140,9 +140,11 @@ int main(int argc, char *argv[]) {
 		exit(1);
 			
 	} else if (cur == SNAP_JUMPED) {
-		cur = Snap(SNAP_TARGET_NOJUMP, NULL, SNAP_SHARED | SNAP_NO_FD ); //to set up parent fast jumper
+		cur = Snap(SNAP_TARGET_NOJUMP, NULL, SNAP_UPDATEABLE | SNAP_SHARE_ALL ); //to set up parent fast jumper
 		if (cur >= 0) {
+			int old = shared_buf[IDX_ORIG];
 			shared_buf[IDX_ORIG] = cur;
+			close(old);
 		}
 
 		parent_work_function(stack_buf, shared_buf, private_buf);

@@ -15,21 +15,24 @@ extern "C" {
 /* special targets */
 #define SNAP_TARGET_NOJUMP (-1)
 
-
 /* snap flags  */
-#define SNAP_NO_VM     0x0001
-#define SNAP_NO_FD     0x0002
-#define SNAP_NO_CRED   0x0004
-#define SNAP_SHARED    0x0008
-#define SNAP_UPDATE    0x0010
+#define SNAP_SHARE_VM     0x0001
+#define SNAP_SHARE_FD     0x0002
+#define SNAP_SHARE_CRED   0x0004
+#define SNAP_SHARE_ALL    0x0007
 
+#define SNAP_UPDATEABLE   0x0008
+#define SNAP_UPDATE       0x0010
+#define SNAP_NOTHING      0x0020
+
+#define SNAP_FAILED (-1)
+#define SNAP_JUMPED (-2)
+
+// if you want to look purty
 #define SNAP_ALL (0)
 
-#define SNAP_NOTHING (SNAP_NO_VM|SNAP_NO_FD|SNAP_NO_CRED)
-#define SNAP_NONE SNAP_NOTHING
-
-#define SNAP_JUMPED (-1)
-#define SNAP_FAILED (-2)
+#include <string.h>
+#include <errno.h>
 
 
 int debug_snap(int dest, int *src, int flags);
@@ -41,10 +44,10 @@ int debug_snap(int dest, int *src, int flags);
 inline int Snap(int dest, int *src, int flags) {
 	int rv = debug_snap(dest, src, flags);
 	if (rv == SNAP_FAILED) {
+		fprintf(stderr, "snap got error %d: %s\n", errno, strerror(errno));
 #ifdef __cplusplus
 		throw strerror(errno);
 #else
-		perror("snap");
 		abort();
 #endif
 	}
@@ -58,10 +61,10 @@ inline int Snap(int dest, int *src, int flags) {
 inline int Snap(int dest, int *src, int flags) {
 	int rv = snap(dest, src, flags);
 	if (rv == SNAP_FAILED) {
+		fprintf(stderr, "snap got error %d: %s\n", errno, strerror(errno));
 #ifdef __cplusplus
 		throw strerror(errno);
 #else
-		perror("snap");
 		abort();
 #endif
 	}
