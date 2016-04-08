@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
 		cur = Snap(SNAP_TARGET_NOJUMP, NULL, SNAP_UPDATEABLE | SNAP_SHARE_ALL); //can't actually get back here!
 		if (cur >= 0) {
 			shared_buf[IDX_CHLD] = cur;
-		} 
+		}
 
 		child_work_function(stack_buf, shared_buf, private_buf);
 		cerr << "Child improperly exited?" << endl;

@@ -3,7 +3,7 @@ include ../Makefile.inc
 VPATH=.:src:include
 DEPFILE = .depends
 
-build-all : correct1 fork ssl_snap_server ssl_snap_client switcher switcher_pthread
+build-all : correct1 fork ssl_snap_server ssl_snap_client switcher switcher_pthread nonshared
 
 ssl_snap_server: src/ssl_snap_server.o src/snap_ssl.o src/shared_malloc.o src/snapper.o
 	$(CXX) $(CXXFLAGS) $> -o $@ -lssl -lcrypto
@@ -23,11 +23,14 @@ switcher_pthread : src/snapper.o src/switcher_pthread.o
 switcher : src/snapper.o src/switcher.o
 	$(CXX) $(CXXFLAGS) $> -o $@
 
+nonshared : src/snapper.o src/nonshared.c
+	$(CC) $(CFLAGS) $> -o $@
+
 correct1 : src/snapper.o src/correct1.o
 	$(CC) $(CFLAGS) $> -o $@
 
 clean:
-	rm -f src/*.o **/*~ correct1 fork ssl_snap_server ssl_snap_client correct_shared switcher switcher_pthread
+	rm -f src/*.o **/*~ correct1 fork ssl_snap_server ssl_snap_client correct_shared switcher switcher_pthread nonshared
 
 depend:
 	truncate -s 0 $(DEPFILE)

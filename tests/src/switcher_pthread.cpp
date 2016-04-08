@@ -51,8 +51,6 @@ void* child_work_function(void *arg) {
 
 	clock_gettime(CLOCK_REALTIME, &start);
 
-
-
 	while(buf[1] < 10000) {
 		pthread_mutex_lock(&mutex);
 		buf[1] = (buf[1]+1);

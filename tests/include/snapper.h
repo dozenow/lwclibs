@@ -23,6 +23,12 @@ extern "C" {
 
 #define SNAP_UPDATEABLE   0x0008
 #define SNAP_UPDATE       0x0010
+
+/* aliases for updateable */
+#define SNAP_REPLACEABLE   0x0008
+#define SNAP_REPLACE       0x0010
+
+
 #define SNAP_NOTHING      0x0020
 
 #define SNAP_FAILED (-1)
@@ -36,41 +42,15 @@ extern "C" {
 
 
 int debug_snap(int dest, int *src, int flags);
+int Snap(int dest, int *src, int flags);
 
 #ifdef SNAP_DIAGNOSTIC
 
 #define snap debug_snap
 
-inline int Snap(int dest, int *src, int flags) {
-	int rv = debug_snap(dest, src, flags);
-	if (rv == SNAP_FAILED) {
-		fprintf(stderr, "snap got error %d: %s\n", errno, strerror(errno));
-#ifdef __cplusplus
-		throw strerror(errno);
-#else
-		abort();
-#endif
-	}
-	return rv;
-}
-
 #else
 
 #define snap(dest, src, flags) syscall(547, dest, src, flags)
-
-inline int Snap(int dest, int *src, int flags) {
-	int rv = snap(dest, src, flags);
-	if (rv == SNAP_FAILED) {
-		fprintf(stderr, "snap got error %d: %s\n", errno, strerror(errno));
-#ifdef __cplusplus
-		throw strerror(errno);
-#else
-		abort();
-#endif
-	}
-	return rv;
-}
-
 
 #endif
 
