@@ -11,6 +11,10 @@ snap:kern_snap:alloc:syssnap {
 	printf("allocated snap 0x%lx", arg0);
 }
 
+snap:kern_snap:copy:syssnap {
+	printf("copied snap 0x%lx", arg0);
+}
+
 snap:kern_snap:update:syssnap {
 	printf("updating snap 0x%lx refcnt=%d", arg0, args[0]->se_refcnt);
 }
