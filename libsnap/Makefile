@@ -3,13 +3,12 @@ include ../Makefile.inc
 VPATH=.:src:include
 DEPFILE = .depends
 
-
-CLFAGS += -fPIC
+CFLAGS += -fPIC
 
 build-all : libsnap.so
 
 libsnap.so: src/snapper.o
-	$(CC) -shared $(REQ_LIBS) -o $@ $^ #$>
+	$(CC) -shared $(REQ_LIBS) -o $@ $>
 
 clean:
 	rm -f src/*.o **/*~ 
