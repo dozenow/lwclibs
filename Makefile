@@ -1,5 +1,6 @@
 
 build-all:
+	make -C libsnap build-all
 	make -C tests build-all
 
 clean:
