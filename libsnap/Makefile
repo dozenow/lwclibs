@@ -3,13 +3,16 @@ include ../Makefile.inc
 VPATH=.:src:include
 DEPFILE = .depends
 
+
+CLFAGS += -fPIC
+
 build-all : libsnap.so
 
-
-
+libsnap.so: src/snapper.o
+	$(CC) -shared $(REQ_LIBS) -o $@ $^ #$>
 
 clean:
-	rm -f src/*.o **/*~ correct1 fork ssl_snap_server ssl_snap_client correct_shared switcher switcher_pthread nonshared
+	rm -f src/*.o **/*~ 
 
 depend:
 	truncate -s 0 $(DEPFILE)
