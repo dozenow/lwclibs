@@ -531,14 +531,17 @@ MAX_RELEASE_CHECK_RATE   default: 4095 unless not HAVE_MMAP
 
 #include <unistd.h>
 
+struct sh_memory_pool;
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-void * sh_sbrk(intptr_t incr);
-void sh_sbrk_init(void *addr, size_t length);
+
 #ifdef __cplusplus
 }
 #endif	
+
 
 
 #ifndef DLMALLOC_VERSION
@@ -857,6 +860,12 @@ extern "C" {
 #define sh_bulk_free            bulk_free
 #endif /* USE_DL_PREFIX */
 
+/* create a fixed pool of memory that can serve as an argument to all
+ * subsequent calls to sh_malloc functions. 
+ */
+DLMALLOC_EXPORT struct sh_memory_pool * init_sh_mempool(void *addr, size_t len);
+
+
 /*
   malloc(size_t n)
   Returns a pointer to a newly allocated chunk of at least n bytes, or
@@ -871,7 +880,7 @@ extern "C" {
   maximum supported value of n differs across systems, but is in all
   cases less than the maximum representable value of a size_t.
 */
-DLMALLOC_EXPORT void* sh_malloc(size_t);
+	DLMALLOC_EXPORT void* sh_malloc(size_t, struct sh_memory_pool *);
 
 /*
   free(void* p)
@@ -880,14 +889,14 @@ DLMALLOC_EXPORT void* sh_malloc(size_t);
   It has no effect if p is null. If p was not malloced or already
   freed, free(p) will by default cause the current program to abort.
 */
-DLMALLOC_EXPORT void  sh_free(void*);
+DLMALLOC_EXPORT void  sh_free(void*, struct sh_memory_pool *);
 
 /*
   calloc(size_t n_elements, size_t element_size);
   Returns a pointer to n_elements * element_size bytes, with all locations
   set to zero.
 */
-DLMALLOC_EXPORT void* sh_calloc(size_t, size_t);
+DLMALLOC_EXPORT void* sh_calloc(size_t, size_t, struct sh_memory_pool *);
 
 /*
   realloc(void* p, size_t n)
@@ -911,7 +920,7 @@ DLMALLOC_EXPORT void* sh_calloc(size_t, size_t);
   The old unix realloc convention of allowing the last-free'd chunk
   to be used as an argument to realloc is not supported.
 */
-DLMALLOC_EXPORT void* sh_realloc(void*, size_t);
+DLMALLOC_EXPORT void* sh_realloc(void*, size_t, struct sh_memory_pool *);
 
 /*
   realloc_in_place(void* p, size_t n)
@@ -926,7 +935,7 @@ DLMALLOC_EXPORT void* sh_realloc(void*, size_t);
 
   Returns p if successful; otherwise null.
 */
-DLMALLOC_EXPORT void* sh_realloc_in_place(void*, size_t);
+DLMALLOC_EXPORT void* sh_realloc_in_place(void*, size_t, struct sh_memory_pool *);
 
 /*
   memalign(size_t alignment, size_t n);
@@ -940,7 +949,7 @@ DLMALLOC_EXPORT void* sh_realloc_in_place(void*, size_t);
 
   Overreliance on memalign is a sure way to fragment space.
 */
-DLMALLOC_EXPORT void* sh_memalign(size_t, size_t);
+DLMALLOC_EXPORT void* sh_memalign(size_t, size_t, struct sh_memory_pool *);
 
 /*
   int posix_memalign(void** pp, size_t alignment, size_t n);
@@ -950,14 +959,14 @@ DLMALLOC_EXPORT void* sh_memalign(size_t, size_t);
   returns EINVAL if the alignment is not a power of two (3) fails and
   returns ENOMEM if memory cannot be allocated.
 */
-DLMALLOC_EXPORT int sh_posix_memalign(void**, size_t, size_t);
+DLMALLOC_EXPORT int sh_posix_memalign(void**, size_t, size_t, struct sh_memory_pool *);
 
 /*
   valloc(size_t n);
   Equivalent to memalign(pagesize, n), where pagesize is the page
   size of the system. If the pagesize is unknown, 4096 is used.
 */
-DLMALLOC_EXPORT void* sh_valloc(size_t);
+DLMALLOC_EXPORT void* sh_valloc(size_t, struct sh_memory_pool *);
 
 /*
   mallopt(int parameter_number, int parameter_value)
@@ -981,7 +990,7 @@ DLMALLOC_EXPORT void* sh_valloc(size_t);
   M_GRANULARITY        -2     page size   any power of 2 >= page size
   M_MMAP_THRESHOLD     -3      256*1024   any   (or 0 if no MMAP support)
 */
-DLMALLOC_EXPORT int sh_mallopt(int, int);
+DLMALLOC_EXPORT int sh_mallopt(int, int, struct sh_memory_pool *);
 
 /*
   malloc_footprint();
@@ -992,7 +1001,7 @@ DLMALLOC_EXPORT int sh_mallopt(int, int);
   Even if locks are otherwise defined, this function does not use them,
   so results might not be up to date.
 */
-DLMALLOC_EXPORT size_t sh_malloc_footprint(void);
+DLMALLOC_EXPORT size_t sh_malloc_footprint(struct sh_memory_pool *);
 
 /*
   malloc_max_footprint();
@@ -1005,7 +1014,7 @@ DLMALLOC_EXPORT size_t sh_malloc_footprint(void);
   otherwise defined, this function does not use them, so results might
   not be up to date.
 */
-DLMALLOC_EXPORT size_t sh_malloc_max_footprint(void);
+DLMALLOC_EXPORT size_t sh_malloc_max_footprint(struct sh_memory_pool *);
 
 /*
   malloc_footprint_limit();
@@ -1016,7 +1025,7 @@ DLMALLOC_EXPORT size_t sh_malloc_max_footprint(void);
   guarantee that this number of bytes can actually be obtained from
   the system.
 */
-DLMALLOC_EXPORT size_t sh_malloc_footprint_limit();
+DLMALLOC_EXPORT size_t sh_malloc_footprint_limit(struct sh_memory_pool *);
 
 /*
   malloc_set_footprint_limit();
@@ -1030,7 +1039,7 @@ DLMALLOC_EXPORT size_t sh_malloc_footprint_limit();
   additional system memory will fail. However, invocation cannot
   retroactively deallocate existing used memory.
 */
-DLMALLOC_EXPORT size_t sh_malloc_set_footprint_limit(size_t bytes);
+DLMALLOC_EXPORT size_t sh_malloc_set_footprint_limit(size_t bytes, struct sh_memory_pool *);
 
 #if MALLOC_INSPECT_ALL
 /*
@@ -1089,7 +1098,7 @@ DLMALLOC_EXPORT void sh_malloc_inspect_all(void(*handler)(void*, void *, size_t,
   be kept as longs, the reported values may wrap around zero and
   thus be inaccurate.
 */
-DLMALLOC_EXPORT struct mallinfo sh_mallinfo(void);
+DLMALLOC_EXPORT struct mallinfo sh_mallinfo(struct sh_memory_pool *mp);
 #endif /* NO_MALLINFO */
 
 /*
@@ -1141,7 +1150,7 @@ DLMALLOC_EXPORT struct mallinfo sh_mallinfo(void);
     return first;
   }
 */
-DLMALLOC_EXPORT void** sh_independent_calloc(size_t, size_t, void**);
+	DLMALLOC_EXPORT void** sh_independent_calloc(size_t, size_t, void**, struct sh_memory_pool *mp);
 
 /*
   independent_comalloc(size_t n_elements, size_t sizes[], void* chunks[]);
@@ -1199,7 +1208,7 @@ DLMALLOC_EXPORT void** sh_independent_calloc(size_t, size_t, void**);
   since it cannot reuse existing noncontiguous small chunks that
   might be available for some of the elements.
 */
-DLMALLOC_EXPORT void** sh_independent_comalloc(size_t, size_t*, void**);
+	DLMALLOC_EXPORT void** sh_independent_comalloc(size_t, size_t*, void**, struct sh_memory_pool *mp);
 
 /*
   bulk_free(void* array[], size_t n_elements)
@@ -1210,14 +1219,14 @@ DLMALLOC_EXPORT void** sh_independent_comalloc(size_t, size_t*, void**);
   is returned.  For large arrays of pointers with poor locality, it
   may be worthwhile to sort this array before calling bulk_free.
 */
-DLMALLOC_EXPORT size_t  sh_bulk_free(void**, size_t n_elements);
+	DLMALLOC_EXPORT size_t  sh_bulk_free(void**, size_t n_elements, struct sh_memory_pool *mp);
 
 /*
   pvalloc(size_t n);
   Equivalent to valloc(minimum-page-that-holds(n)), that is,
   round up n to nearest pagesize.
  */
-DLMALLOC_EXPORT void*  sh_pvalloc(size_t);
+	DLMALLOC_EXPORT void*  sh_pvalloc(size_t, struct sh_memory_pool *mp);
 
 /*
   malloc_trim(size_t pad);
@@ -1240,7 +1249,7 @@ DLMALLOC_EXPORT void*  sh_pvalloc(size_t);
 
   Malloc_trim returns 1 if it actually released any memory, else 0.
 */
-DLMALLOC_EXPORT int  sh_malloc_trim(size_t);
+	DLMALLOC_EXPORT int  sh_malloc_trim(size_t, struct sh_memory_pool *mp);
 
 /*
   malloc_stats();
@@ -1261,7 +1270,7 @@ DLMALLOC_EXPORT int  sh_malloc_trim(size_t);
   malloc_stats prints only the most commonly interesting statistics.
   More information can be obtained by calling mallinfo.
 */
-DLMALLOC_EXPORT void  sh_malloc_stats(void);
+DLMALLOC_EXPORT void  sh_malloc_stats(struct sh_memory_pool *mp);
 
 /*
   malloc_usable_size(void* p);
