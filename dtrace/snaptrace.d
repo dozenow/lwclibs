@@ -1,6 +1,5 @@
 syscall::snap:entry {
 	printf("snap(%d, %d, %d)", arg0, arg1, arg2);
-	self->ts = timestamp;
 }
 
 snap:kern_snap:jump:syssnap {
@@ -49,8 +48,6 @@ snap:kern_snap:sharecred:syssnap {
 	/* print(*args[0]); show all of the struct, */
 	printf("current cred shared with snap 0x%lx, refcnt=%d", arg0, args[0]->se_cred->cr_ref);
 }
-
-
 
 syscall::snap:return {
 	printf("snap rv = %d", arg1);

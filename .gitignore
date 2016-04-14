@@ -11,3 +11,4 @@ switcher_pthread
 *.core
 *.lo
 *.slo
+nonshared

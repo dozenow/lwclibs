@@ -59,7 +59,7 @@ int main() {
 	}
 
 
-	sbuf[0] = snap_take();
+	sbuf[0] = snap(SNAP_TARGET_NOJUMP, NULL, SNAP_SHARE_CRED);; //snap_take();
 	if (sbuf[0] == SNAP_JUMPED) {
 		// been here, got snapped back. 
 
