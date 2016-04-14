@@ -2,20 +2,22 @@ include ../Makefile.inc
 
 VPATH=.:src:include
 DEPFILE = .depends
+TARGETS=correct1 fork ssl_snap_server ssl_snap_client switcher switcher_pthread nonshared
 
-CFLAGS += -I../libsnap/include
-CXXFLAGS += -I../libsnap/include
-
-LIBDIRS = -L../libsnap
+LIBDIRS = -L../libs/
 LIBS = -lsnap
 
-build-all : correct1 fork ssl_snap_server ssl_snap_client switcher switcher_pthread nonshared
 
-ssl_snap_server: src/ssl_snap_server.o src/snap_ssl.o src/shared_malloc.o
+build-all : $(TARGETS)
+
+../libs/libsnap.a: ../libs/src/*.c ../libs/include/*.h
+	$(MAKE) -C ../libs
+
+ssl_snap_server: src/ssl_snap_server.o src/snap_ssl.o 
 	$(CXX) $(CXXFLAGS) $> -o $@ -lssl -lcrypto $(LIBDIRS) $(LIBS)
 
-ssl_snap_client: src/ssl_snap_client.o src/snap_ssl.o src/shared_malloc.o 
-	$(CXX) $(CXXFLAGS) $> -o $@ -lssl -lcrypto
+ssl_snap_client: src/ssl_snap_client.o src/snap_ssl.o 
+	$(CXX) $(CXXFLAGS) $> -o $@ -lssl -lcrypto $(LIBDIRS) $(LIBS)
 
 fork: src/fork.c
 	$(CC) $(CFLAGS)  $(LIBDIRS) $(LIBS) $> -o $@
@@ -27,20 +29,20 @@ switcher_pthread : src/switcher_pthread.o
 	$(CXX) $(CXXFLAGS)  $(LIBDIRS) $(LIBS) -lpthread $> -o $@
 
 switcher : src/switcher.o
-	$(CXX) $(CXXFLAGS)  $(LIBDIRS) $(LIBS) $> -o $@
+	$(CXX) $(CXXFLAGS) $> $(LIBDIRS) $(LIBS) -o $@
 
 nonshared : src/nonshared.c
-	$(CC) $(CFLAGS)  $(LIBDIRS) $(LIBS) $> -o $@
+	$(CC) $(CFLAGS) $> $(LIBDIRS) $(LIBS) -o $@
 
 correct1 : src/correct1.o
-	$(CC) $(CFLAGS)  $(LIBDIRS) $(LIBS) $> -o $@
+	$(CC) $(CFLAGS) $> $(LIBDIRS) $(LIBS)  -o $@
 
 clean:
-	rm -f src/*.o **/*~ correct1 fork ssl_snap_server ssl_snap_client correct_shared switcher switcher_pthread nonshared
+	rm -f src/*.o **/*~ $(TARGETS) *.core
 
 depend:
 	truncate -s 0 $(DEPFILE)
-	makedepend -Y -f $(DEPFILE) -- -Iinclude -- src/*.c src/*.cpp
+	makedepend -Y -f $(DEPFILE) -- -Iinclude -I../libs/include -- src/*.c src/*.cpp
 
 
 .PHONY: depend build-all

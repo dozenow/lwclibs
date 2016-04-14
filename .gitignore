@@ -7,3 +7,7 @@ ssl_snap_client
 correct_shared
 switcher
 switcher_pthread
+*.a
+*.core
+*.lo
+*.slo

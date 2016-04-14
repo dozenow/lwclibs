@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define SNAP_DIAGNOSTIC
 #include "snapper.h"
 
 int main() {

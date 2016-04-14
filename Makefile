@@ -1,10 +1,13 @@
 
 build-all:
-	make -C libsnap build-all
-	gmake -C libref build-all
-	make -C tests build-all
+#	$(MAKE) -C libref libref not committed
+	$(MAKE) -C libs 
+	$(MAKE) -C tests build-all
 
 clean:
-	make -C tests clean
+	rm -f *~
+	$(MAKE) -C libs clean
+	$(MAKE) -C tests clean
+
 
 .PHONY: build-all clean

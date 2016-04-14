@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-//#define SNAP_DIAGNOSTIC
-
 #ifdef __cplusplus
 namespace snapper {
 extern "C" {

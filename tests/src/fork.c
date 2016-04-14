@@ -12,7 +12,6 @@
 #include <errno.h>
 #include <sys/socket.h>
 
-#define SNAP_DIAGNOSTIC
 #include "snapper.h"
 
 
