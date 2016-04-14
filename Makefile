@@ -5,7 +5,7 @@ build-all:
 	$(MAKE) -C tests build-all
 
 clean:
-	rm -f *~
+	rm -f *~ *.core
 	$(MAKE) -C libs clean
 	$(MAKE) -C tests clean
 
