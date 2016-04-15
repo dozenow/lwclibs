@@ -7,8 +7,8 @@ CFLAGS+=-fpic
 
 all: libsnap.so libsnap.a
 
-LIBSNAP_DEPS=src/snapper.o src/shared_malloc.o
-libsnap.so: src/snapper.o src/shared_malloc.o
+LIBSNAP_DEPS=src/snapper.o src/shared_malloc.o src/shared_ht.o src/shared_llist.o
+libsnap.so: $(LIBSNAP_DEPS)
 	$(CC) -shared $(LIBSNAP_DEPS) -o libsnap.so
 	ar -rc libsnap.a $(LIBSNAP_DEPS)
 

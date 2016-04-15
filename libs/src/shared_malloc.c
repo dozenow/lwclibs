@@ -1217,7 +1217,7 @@ static void * sh_sbrk(intptr_t incr, struct sh_memory_pool *mp) {
 		errno = incr < 0 ? EINVAL : ENOMEM;
 		rv = (void*)(-1);
 	}
-	fprintf(stderr, "sbrk(%ld)=0x%lx\n", incr, (unsigned long) rv);
+	//fprintf(stderr, "sbrk(%ld)=0x%lx\n", incr, (unsigned long) rv);
 	return rv;
 }
 
