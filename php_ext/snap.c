@@ -22,17 +22,22 @@
 #include "config.h"
 #endif
 
+#include "shared_malloc.h"
+#undef HAVE_MMAP
+
 #include "php.h"
 #include "php_ini.h"
 #include "ext/standard/info.h"
 #include "php_snap.h"
 #include "snapper.h"
+#include "shared_ht.h"
 #include "SAPI.h"
 
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/mman.h>
 
 /* If you declare any globals in php_snap.h uncomment this:
 ZEND_DECLARE_MODULE_GLOBALS(snap)
@@ -41,7 +46,9 @@ ZEND_DECLARE_MODULE_GLOBALS(snap)
 /* True global resources - no need for thread safety here */
 static int le_snap;
 static int snap_fd;
-static HashTable snap_hash;
+static sh_ht_t *snap_hash;
+static struct sh_memory_pool *snap_mp;
+static void *snap_mempool_addr;
 
 /* {{{ PHP_INI
  */
@@ -92,26 +99,39 @@ PHP_FUNCTION(snapcache)
 		return;
 
 	char buf[128];
-
+	int retval = 42;
 	if (time(NULL) < expiration) {
 		int rv = snap(SNAP_TARGET_NOJUMP, NULL, SNAP_SHARE_FD);
 		snprintf(buf, sizeof(buf), "snap rv = %d\n", rv);
 		write(snap_fd, buf, strlen(buf));
 		php_printf("%s", buf);
-		if (rv == SNAP_FAILED) {
+		if (rv == SNAP_JUMPED) {
+			retval = 0;
+		} else if (rv == SNAP_FAILED) {
+			retval = -1;
 			php_error(E_ERROR, "SNAP FAILED: %s\n", strerror(errno));
 		} else if (rv >= 0) {
-			zval val;
+			retval = 1;
 			char *uri = SG(request_info).request_uri;
-			zend_string *str = zend_string_init(uri, strlen(uri)+1, 1);
-			ZVAL_LONG(&val, rv);
-			zend_hash_update(&snap_hash, str, &val);
-			zend_string_free(str);
+			int upval = sh_ht_update(snap_hash, uri, strlen(uri)+1, (void*)(size_t)rv, sizeof(rv));
+			if (upval == 1) {
+				snprintf(buf, sizeof(buf), "Item at %s already existed. \n", uri);
+				write(snap_fd, buf, strlen(buf));
+				php_printf("%s\n", buf);
+				
+			} else if (upval == 0) {
+				snprintf(buf, sizeof(buf), "Item at %s inserted.\n", uri);
+				write(snap_fd, buf, strlen(buf));
+				php_printf("%s\n", buf);
+			}
+
 		}
 	} else {
 		snprintf(buf, sizeof(buf), "%d <= %d\n", time(NULL), expiration);
 		write(snap_fd, buf, strlen(buf));
 	}
+
+	RETURN_LONG(retval);
 
 }
 /* }}} */
@@ -128,14 +148,43 @@ static void php_snap_init_globals(zend_snap_globals *snap_globals)
 */
 /* }}} */
 
-static void snap_hash_dtor(zval *zval) {
-	/* close val */
-	char buf[128];
-	close(Z_LVAL_P(zval));
-	snprintf(buf, sizeof(buf), "destroying hash item, %d\n", Z_LVAL_P(zval));
-	write(snap_fd, buf, strlen(buf));
+static size_t djb2_hash(void *str, size_t len)
+{
+	unsigned long hash = 5381;
+	int c;
+
+	for(size_t i = 0; i < len; ++i) {
+		c = ((char*)str)[i];
+		hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+	}
+	return hash;
+}
+
+static void * voidcpy(void *src, size_t len, struct sh_memory_pool *mp) {
+	char * dest = sh_malloc(len, mp);
+	if (!dest)
+		return NULL;
+	memcpy(dest, src, len);
+	return dest;
+}
+
+
+static int ht_cmp(void *a, size_t a_len, void *b, size_t b_len) {
+	return strcmp(a,b);
+}
+
+static void * identitycpy(void *src, size_t len, struct sh_memory_pool *mp) {
+	return src;
+}
+
+static void sfd_free(void *src, struct sh_memory_pool *mp) {
+	int fd = (int) src;
+	//close(fd);
 	return;
-};
+}
+
+
+#define MEMPOOL_MMAP_SIZE (4096*100)
 
 /* {{{ PHP_MINIT_FUNCTION
  */
@@ -145,7 +194,27 @@ PHP_MINIT_FUNCTION(snap)
 	REGISTER_INI_ENTRIES();
 	*/
 	snap_fd = open("/tmp/phpsnap.txt", O_CREAT | O_TRUNC | O_WRONLY);
-	zend_hash_init(&snap_hash, 50, NULL, snap_hash_dtor, 1);
+
+
+	snap_mempool_addr = mmap(NULL, MEMPOOL_MMAP_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_SHARED, -1, 0);
+	if (snap_mempool_addr == MAP_FAILED) {
+		php_error(E_ERROR, "Snap minit failed in mmap: %s\n", strerror(errno));
+		return FAILURE;
+	}
+
+	snap_mp = init_sh_mempool(snap_mempool_addr, MEMPOOL_MMAP_SIZE);
+	if (!snap_mp) {
+		php_error(E_ERROR, "Failed to init mempool\n");
+		return FAILURE;
+	}
+
+	snap_hash = sh_ht_create(ht_cmp, djb2_hash, voidcpy, identitycpy, sh_free, sfd_free, snap_mp);
+	if (!snap_hash) {
+		snap_mp = NULL;
+		munmap(snap_mempool_addr, MEMPOOL_MMAP_SIZE);
+		php_error(E_ERROR, "Failed to init snap_hash\n");
+	}
+
 	char buf[] = "opened snap_fd and initialized HT\n";
 	write(snap_fd, buf, strlen(buf));
 	return SUCCESS;
@@ -160,7 +229,10 @@ PHP_MSHUTDOWN_FUNCTION(snap)
 	UNREGISTER_INI_ENTRIES();
 	*/
 	close(snap_fd);
-	zend_hash_destroy(&snap_hash);
+	sh_ht_destroy(&snap_hash);
+	snap_mp = NULL;
+	munmap(snap_mempool_addr, MEMPOOL_MMAP_SIZE);
+
 	return SUCCESS;
 }
 /* }}} */
@@ -183,23 +255,22 @@ PHP_RINIT_FUNCTION(snap)
 	snprintf(buf, sizeof(buf), "requested %s\n", uri);
 	write(snap_fd, buf, strlen(buf));
 
-	zend_string *str = zend_string_init(uri, strlen(uri)+1, 1);	
-	zval *rv;
-	if ((rv = zend_hash_find(&snap_hash, str)) != NULL) {
-		snprintf(buf, sizeof(buf), "present in HT, val is %d. Trying to snap\n", Z_LVAL_P(rv));
+	sh_ht_iterator_t *it = sh_ht_get(snap_hash, uri, strlen(uri)+1);
+	if (it) {
+		int fd;
+		size_t fdsize;
+		sh_ht_value(it, (void*) &fd, &fdsize);
+		snprintf(buf, sizeof(buf), "present in HT, val is %d. Trying to snap\n", fd);
 		write(snap_fd, buf, strlen(buf));
-		int ret = snap(Z_LVAL_P(rv), NULL, SNAP_NOTHING);
-		if (ret) {
-			snprintf(buf, sizeof(buf), "arrived post snap: rv=%d, err=%s\n", ret, strerror(errno));
-		}
-		
+		free_ht_iterator(it);
+		int ret = snap(fd, NULL, SNAP_NOTHING);
+		snprintf(buf, sizeof(buf), "arrived post snap: rv=%d, err=%s\n", ret, strerror(errno));
+		write(snap_fd, buf, strlen(buf));
+		php_error(E_ERROR, buf);
 	} else {
 		snprintf(buf, sizeof(buf), "not present in HT\n");
+		write(snap_fd, buf, strlen(buf));
 	}
-	zend_string_free(str);
-
-	write(snap_fd, buf, strlen(buf));
-	php_printf("%s %s\n", uri, buf);
 
 	return SUCCESS;
 }

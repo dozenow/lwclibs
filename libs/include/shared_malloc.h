@@ -523,7 +523,8 @@ MAX_RELEASE_CHECK_RATE   default: 4095 unless not HAVE_MMAP
 
 /* Version identifier to allow people to support multiple versions */
 
-
+#ifndef SHARED_MALLOC_H
+#define SHARED_MALLOC_H
 /* SHARED MALLOC changes for SNAP */
 #define USE_DL_PREFIX
 #define HAVE_MMAP 0
@@ -1445,3 +1446,5 @@ DLMALLOC_EXPORT int mspace_mallopt(int, int);
 #ifdef __cplusplus
 }  /* end of extern "C" */
 #endif /* __cplusplus */
+
+#endif /* header guard */
