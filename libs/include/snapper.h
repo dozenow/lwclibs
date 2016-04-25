@@ -6,62 +6,57 @@
 #include <unistd.h>
 
 #ifdef __cplusplus
-namespace snapper {
 extern "C" {
 #endif
 
 /* special targets */
-#define SNAP_TARGET_NOJUMP (-1)
+#define LWC_TARGET_NOJUMP (-1)
 
-/* snap flags  */
-#define SNAP_SHARE_VM     0x0001
-#define SNAP_SHARE_FD     0x0002
-#define SNAP_SHARE_CRED   0x0004
-#define SNAP_SHARE_ALL    0x0007
-
-#define SNAP_UPDATEABLE   0x0008
-#define SNAP_UPDATE       0x0010
-
-/* aliases for updateable */
-#define SNAP_REPLACEABLE   0x0008
-#define SNAP_REPLACE       0x0010
-
-
-#define SNAP_NOTHING      0x0020
-
-#define SNAP_FAILED (-1)
-#define SNAP_JUMPED (-2)
-
-// if you want to look purty
-#define SNAP_ALL (0)
+#define LWC_FAILED (-1)
+#define LWC_SWITCHED (-2)
 
 #include <string.h>
 #include <errno.h>
 
 
-int debug_snap(int dest, int *src, int flags);
-int Snap(int dest, int *src, int flags);
 
-#ifdef SNAP_DIAGNOSTIC
+/* resource types */
+#define LWC_RESOURCE_MEMORY	0x001
+#define LWC_RESOURCE_FILES		0x002
+#define LWC_RESOURCE_CREDENT	0x004
 
-#define snap debug_snap
-
-#else
-
-#define snap(dest, src, flags) syscall(547, dest, src, flags)
-
-#endif
-
-#define snap_jump(dest) snap(dest, NULL, SNAP_NOTHING)
-#define snap_take() snap(SNAP_TARGET_NOJUMP, NULL, SNAP_ALL);
+/* resource options */
+#define LWC_RESOURCE_COPY		0x000
+#define LWC_RESOURCE_SHARE		0x008
+#define LWC_RESOURCE_UNMAP		0x010
 
 
+struct lwc_resource_specifier {
+	unsigned int flags; /* bitwise one type and one option */
+	union {
+		struct {
+			vm_offset_t start;
+			vm_offset_t end;
+		} memory;
+		struct {
+			int from;
+			int to;
+		} descriptors;
+		struct {
+			int x;
+			/* not sure how to make this coarse yet */
+		} credentials;
+	} sub;
+};
 
-
+#define lwccreate(resources, numr, src, src_arg) syscall(546, resources, numr, src, src_arg)
+#define lwcswitch(to, to_arg, src, src_arg, susp) syscall(547, to, to_arg, src, src_arg, susp)
+#define lwcsuspendswitch(to, to_arg, src, src_arg) lwcswitch(to, to_arg, src, src_arg, 1)
+#define lwcdiscardswitch(to, to_arg) lwcswitch(to, to_arg, NULL, NULL, 0)
+#define lwcoverlay(to, resources, numr) syscall(548, to, resources, numr)
 
 #ifdef __cplusplus
 }
-};
 #endif
 
 

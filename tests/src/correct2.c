@@ -34,24 +34,24 @@ int main() {
 	sbuf[0] = 42;
 	sbuf[1] = 1;
 	int src = -1;
-	int new_snap;
+	int new_lwc;
 
+	void *src_arg;
+	new_lwc = lwccreate(&specs, 10, &src, &src_arg);
 
-	mbuf[0] = 0;
-
-	new_snap = Snap(SNAP_TARGET_NOJUMP, &src, SNAP_SHARE_ALL);
-	if (new_snap >= 0) { // created a snap
+	if (new_lwc >= 0) { // created a lwc
 		mbuf[0] = 1;
-		sbuf[0] = new_snap;
-		int x = Snap(sbuf[0], NULL, SNAP_NOTHING);
-		printf("Should not see this. new snap is %d, x is %d\n", new_snap, x);
-	} else if (new_snap == SNAP_JUMPED) {
-
-		if (mbuf[10] != mbuf[0]) {
-			fprintf(stderr, "mbuf[10](%d) != mbuf[0](%d) (mbuf 0x%lx)\n", mbuf[10], mbuf[0], (unsigned long) mbuf);
+		sbuf[0] = new_lwc;
+		int x = lwcdiscardswitch(sbuf[0], 42);
+		printf("Should not see this. new snap is %d, x is %d\n", new_lwc, x);
+		return EXIT_FAILURE;
+	} else if (new_lwc == LWC_SWITCHED) {
+		printf("src is %d and src_arg = %d\n", src, (int) src_arg);
+		if (!(mbuf[10] == stackbuf[10] == 1)) {
+			fprintf(stderr, "mbuf[10](%d) != stackbuf[10](%d)\n", mbuf[10], stackbuf[10]);
 			if (sbuf[1] != 100) {
 				sbuf[1] = 100;
-				Snap(sbuf[0], NULL, SNAP_NOTHING);
+				lwcdiscardswitch(sbuf[0], 45);
 			}
 			return EXIT_FAILURE;
 		}
@@ -61,17 +61,19 @@ int main() {
 			return EXIT_FAILURE;
 		}
 
+		sbuf[2]++;
+
 		mbuf[0]++;
 		memset(mbuf+4, mbuf[0], 4092);
 		memset(stackbuf, mbuf[0], 4096);
 
-		if (mbuf[0] < 10) {
-			Snap(sbuf[0], NULL, SNAP_NOTHING);
+		if (sbuf[2] < 10) {
+			lwcdiscardswitch(sbuf[0], 46);
 		}
 	} else {
-		fprintf(stderr, "Snap failed: %s\n", strerror(errno));
+		fprintf(stderr, "switch failed: %s\n", strerror(errno));
+		return EXIT_FAILURE;
 	}
 
 	return EXIT_SUCCESS;
-
 }
