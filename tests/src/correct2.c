@@ -3,12 +3,13 @@
 #include <sys/procdesc.h>
 #include <sys/mman.h>
 #include <string.h>
+#include <errno.h>
 #include <strings.h>
 #include <stdlib.h>
 #include <stdlib.h>
 #include <time.h>
 
-#include "snapper.h"
+#include "lwc.h"
 
 int main() {
 
@@ -37,12 +38,13 @@ int main() {
 	int new_lwc;
 
 	void *src_arg;
-	new_lwc = lwccreate(&specs, 10, &src, &src_arg);
+	size_t num_args = 1;
+	new_lwc = lwccreate(NULL, 0, &src, &src_arg, &num_args, 0);
 
 	if (new_lwc >= 0) { // created a lwc
 		mbuf[0] = 1;
 		sbuf[0] = new_lwc;
-		int x = lwcdiscardswitch(sbuf[0], 42);
+		int x = lwcdiscardswitch(sbuf[0], 42, 1);
 		printf("Should not see this. new snap is %d, x is %d\n", new_lwc, x);
 		return EXIT_FAILURE;
 	} else if (new_lwc == LWC_SWITCHED) {
@@ -51,7 +53,7 @@ int main() {
 			fprintf(stderr, "mbuf[10](%d) != stackbuf[10](%d)\n", mbuf[10], stackbuf[10]);
 			if (sbuf[1] != 100) {
 				sbuf[1] = 100;
-				lwcdiscardswitch(sbuf[0], 45);
+				lwcdiscardswitch(sbuf[0], 45, 1);
 			}
 			return EXIT_FAILURE;
 		}
@@ -68,7 +70,7 @@ int main() {
 		memset(stackbuf, mbuf[0], 4096);
 
 		if (sbuf[2] < 10) {
-			lwcdiscardswitch(sbuf[0], 46);
+			lwcdiscardswitch(sbuf[0], 46, 1);
 		}
 	} else {
 		fprintf(stderr, "switch failed: %s\n", strerror(errno));

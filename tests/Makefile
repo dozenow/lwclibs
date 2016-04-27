@@ -2,12 +2,17 @@ include ../Makefile.inc
 
 VPATH=.:src:include
 DEPFILE = .depends
-TARGETS=correct1 fork switcher switcher_pthread nonshared correct_shared
+TARGETS=correct1 fork switcher switcher_pthread nonshared correct_shared overlay_mem overlay_file overlay_cred correct3 correct2
 
-STATICSNAP=../libs/libsnap.a
+STATICLWC=../libs/liblwc.a
 LIBDIRS = -L../libs/
-LIBS = $(STATICSNAP)
+LIBS = $(STATICLWC)
 
+
+build-all : ../libs/liblwc.a $(TARGETS)
+
+overlay_mem : src/overlay_mem.o
+	$(CC) $(CFLAGS) src/overlay_mem.o $(LIBDIRS) -o $@
 
 overlay_file : src/overlay_file.o
 	$(CC) $(CFLAGS) src/overlay_file.o $(LIBDIRS) -o $@
@@ -21,9 +26,7 @@ correct3 : src/correct3.o
 correct2 : src/correct2.o
 	$(CC) $(CFLAGS) src/correct2.o $(LIBDIRS) -o $@
 
-build-all : ../libs/libsnap.a $(TARGETS)
-
-../libs/libsnap.a:
+../libs/liblwc.a:
 	$(MAKE) -C ../libs
 
 SSS_DEPS=src/ssl_snap_server.o src/snap_ssl.o 

@@ -11,7 +11,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "snapper.h"
+#include "lwc.h"
 
 int main() {
 
@@ -29,10 +29,10 @@ int main() {
 	
 	struct lwc_resource_specifier specs[10];
 
-	int new_lwc = lwccreate(NULL, 0, &src, NULL);
+	int new_lwc = lwccreate(NULL, 0, &src, NULL, NULL, 0);
 	if (new_lwc >= 0) {
 		sbuf[parent] = new_lwc;
-		lwcdiscardswitch(new_lwc, 32);
+		lwcdiscardswitch(new_lwc, NULL, 0);
 	} else if (new_lwc == LWC_SWITCHED) {
 		printf("just manually creating the proto snap/lwc to play around and allow for suspendswitch src messed because wasn't in proto ctx %d\n", src);
 	} else if (new_lwc == LWC_FAILED) {
@@ -57,10 +57,10 @@ int main() {
 
 
 	printf("sbuf[parent] + 1 = %d\n", sbuf[parent]+1);
-	new_lwc = lwccreate(&specs, 1, NULL, NULL);
+	new_lwc = lwccreate(&specs, 1, NULL, NULL, 0, 0);
 	if (new_lwc >= 0) {
 		sbuf[lwc1] = new_lwc;
-		new_lwc = lwccreate(&specs, 1, NULL, NULL);
+		new_lwc = lwccreate(&specs, 1, NULL, NULL, 0, 0);
 		if (new_lwc >= 0) {
 			sbuf[lwc2] = new_lwc;
 		} else if (new_lwc == LWC_FAILED) {
@@ -85,7 +85,7 @@ int main() {
 						return EXIT_FAILURE;
 					}
 				}
-				lwcdiscardswitch(sbuf[parent], 0);
+				lwcdiscardswitch(sbuf[parent], 0, 0);
 			}
 		}
 	} else if (new_lwc == LWC_FAILED) {
@@ -110,7 +110,7 @@ int main() {
 					return EXIT_FAILURE;
 				}
 			}
-			lwcdiscardswitch(sbuf[parent], 0);
+			lwcdiscardswitch(sbuf[parent], 0, 0);
 		}
 	}
 	
@@ -118,7 +118,7 @@ int main() {
 	for(sbuf[10] = 0; sbuf[10] < 2; sbuf[10] ++) {
 		next = next == lwc2 ? lwc1 : lwc2;
 		fprintf(stderr, "main context suspending to %d\n", sbuf[next]);
-		lwcsuspendswitch(sbuf[next], 0, NULL, NULL);
+		lwcsuspendswitch(sbuf[next], NULL, 0, NULL, NULL, NULL);
 	}
 
 	return EXIT_SUCCESS;

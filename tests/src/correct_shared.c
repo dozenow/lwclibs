@@ -2,13 +2,14 @@
 #include <stdio.h>
 #include <sys/procdesc.h>
 #include <sys/mman.h>
+#include <errno.h>
 #include <string.h>
 #include <strings.h>
 #include <stdlib.h>
 #include <stdlib.h>
 #include <time.h>
 
-#include "snapper.h"
+#include "lwc.h"
 
 int main() {
 
@@ -38,20 +39,29 @@ int main() {
 
 
 	mbuf[0] = 0;
+	struct lwc_resource_specifier specs[10];
 
-	new_snap = Snap(SNAP_TARGET_NOJUMP, &src, SNAP_SHARE_ALL);
+	/* share what's here, won't grab stack */
+	specs[0].flags = LWC_RESOURCE_MEMORY | LWC_RESOURCE_SHARE;
+	specs[0].sub.memory.start = (vm_offset_t)0;
+	specs[0].sub.memory.end = (vm_offset_t)~0;
+	/* share the file table */
+	specs[1].flags = LWC_RESOURCE_FILES | LWC_RESOURCE_SHARE;
+	specs[1].sub.descriptors.from = specs[1].sub.descriptors.to = -1;
+
+	new_snap = Lwccreate(specs, 2, &src, NULL, NULL, 0);
 	if (new_snap >= 0) { // created a snap
 		mbuf[0] = 1;
 		sbuf[0] = new_snap;
-		int x = Snap(sbuf[0], NULL, SNAP_NOTHING);
+		int x = Lwcsuspendswitch(sbuf[0], NULL, 0, NULL, NULL, NULL);
 		printf("Should not see this. new snap is %d, x is %d\n", new_snap, x);
-	} else if (new_snap == SNAP_JUMPED) {
+	} else if (new_snap == LWC_SWITCHED) {
 
 		if (mbuf[10] != mbuf[0]) {
 			fprintf(stderr, "mbuf[10](%d) != mbuf[0](%d) (mbuf 0x%lx)\n", mbuf[10], mbuf[0], (unsigned long) mbuf);
 			if (sbuf[1] != 100) {
 				sbuf[1] = 100;
-				Snap(sbuf[0], NULL, SNAP_NOTHING);
+				Lwcdiscardswitch(sbuf[0], NULL, 0);
 			}
 			return EXIT_FAILURE;
 		}
@@ -66,7 +76,7 @@ int main() {
 		memset(stackbuf, mbuf[0], 4096);
 
 		if (mbuf[0] < 10) {
-			Snap(sbuf[0], NULL, SNAP_NOTHING);
+			Lwcdiscardswitch(sbuf[0], NULL, 0);
 		}
 	} else {
 		fprintf(stderr, "Snap failed: %s\n", strerror(errno));

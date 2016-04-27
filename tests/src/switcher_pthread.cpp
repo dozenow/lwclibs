@@ -11,9 +11,8 @@
 #include <pthread.h>
 
 #include "netwrap.hpp"
-#include "snapper.h"
+#include "lwc.h"
 
-using namespace snapper;
 
 pthread_t child_thr;
 pthread_cond_t cond;

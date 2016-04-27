@@ -12,7 +12,7 @@
 #include <errno.h>
 #include <sys/socket.h>
 
-#include "snapper.h"
+#include "lwc.h"
 
 
 struct timespec diff(struct timespec *start, struct timespec *end)
@@ -59,8 +59,8 @@ int main() {
 	}
 
 
-	sbuf[0] = snap(SNAP_TARGET_NOJUMP, NULL, SNAP_SHARE_CRED);; //snap_take();
-	if (sbuf[0] == SNAP_JUMPED) {
+	sbuf[0] = lwccreate(NULL, 0, NULL, NULL, 0, 0);
+	if (sbuf[0] == LWC_SWITCHED) {
 		// been here, got snapped back. 
 
 		// verify buffers now in presnap state.
@@ -92,7 +92,7 @@ int main() {
 		}
 
 		return EXIT_SUCCESS;
-	} else if (sbuf[0] == SNAP_FAILED) {
+	} else if (sbuf[0] == LWC_FAILED) {
 		perror("Snap failure: ");
 		return EXIT_FAILURE;
 	}
@@ -183,7 +183,7 @@ int main() {
 
 		read(sock[1], &pid, 1);
 
-		snap_jump(sbuf[0]);
+		lwcdiscardswitch(sbuf[0], NULL, 0);
 
 		fprintf(stderr, "present after jump\n");
 		return EXIT_FAILURE;

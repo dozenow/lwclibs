@@ -10,12 +10,10 @@
 
 #include <iostream>
 
-//#define SNAP_DIAGNOSTIC
 #include "netwrap.hpp"
-#include "snapper.h"
+#include "lwc.h"
 
 using namespace std;
-using namespace snapper;
 
 #define IDX_ORIG 0
 #define IDX_SUPER 1
@@ -45,7 +43,7 @@ void child_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
 	while(private_buf[1] < 10000) {
 		int src;
 		stack_buf[1] = private_buf[1] = (private_buf[1]+1);
-		int ns = Snap(shared_buf[IDX_ORIG], NULL, SNAP_UPDATE | SNAP_SHARE_ALL);
+		int ns = Lwcsuspendswitch(shared_buf[IDX_ORIG], NULL, 0, NULL, NULL, NULL);
 #if 0
 		cerr << "In child with ns=" << ns << " and src=" << src << " with stack_buf and private buf = " << (int)stack_buf[1] << ' ' << (int)private_buf[1] << endl;
 		cerr << "Child UID is " << getuid() << " and capped: " << (bool) cap_sandboxed() << endl;
@@ -72,7 +70,7 @@ void parent_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
 	int i = 0;
 	for(;;) {
 		int src;
-		int ns = Snap(shared_buf[IDX_CHLD], NULL, SNAP_UPDATE | SNAP_SHARE_ALL);
+		int ns = Lwcsuspendswitch(shared_buf[IDX_CHLD], NULL, 0, NULL, NULL, NULL);
 #if 0
 		cerr << "In parent with ns=" << ns << " and src=" << src << " with stack_buf and private buf = " << (int)stack_buf[1] << ' ' << (int) private_buf[1] << endl;
 		cerr << "Parent UID is " << getuid() << " and capped: " << (bool) cap_sandboxed() << endl;
@@ -117,8 +115,14 @@ int main(int argc, char *argv[]) {
 
 	shared_buf[IDX_CHLD] = -1;
 
+	struct lwc_resource_specifier specs[1];
+
+	/* share the file table */
+	specs[0].flags = LWC_RESOURCE_FILES | LWC_RESOURCE_SHARE;
+	specs[0].sub.descriptors.from = specs[0].sub.descriptors.to = -1;
+
 	int src,cur;
-	cur = Snap(SNAP_TARGET_NOJUMP, NULL, SNAP_SHARE_FD);
+	cur = Lwccreate(specs, 1, NULL, NULL, NULL, 0);
 	if (cur >= 0) {
 		shared_buf[IDX_ORIG] = cur;
 
@@ -130,7 +134,7 @@ int main(int argc, char *argv[]) {
 
 		// create child context
 
-		cur = Snap(SNAP_TARGET_NOJUMP, NULL, SNAP_UPDATEABLE | SNAP_SHARE_ALL); //can't actually get back here!
+		cur =  Lwccreate(specs, 1, NULL, NULL, NULL, LWC_SUSPEND_ONLY);
 		if (cur >= 0) {
 			shared_buf[IDX_CHLD] = cur;
 		}
@@ -139,8 +143,8 @@ int main(int argc, char *argv[]) {
 		cerr << "Child improperly exited?" << endl;
 		exit(1);
 			
-	} else if (cur == SNAP_JUMPED) {
-		cur = Snap(SNAP_TARGET_NOJUMP, NULL, SNAP_UPDATEABLE | SNAP_SHARE_ALL ); //to set up parent fast jumper
+	} else if (cur == LWC_SWITCHED) {
+		cur = Lwccreate(specs, 1, NULL, NULL, NULL, LWC_SUSPEND_ONLY);
 		if (cur >= 0) {
 			int old = shared_buf[IDX_ORIG];
 			shared_buf[IDX_ORIG] = cur;

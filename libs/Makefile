@@ -5,14 +5,14 @@ DEPFILE = .depends
 
 CFLAGS+=-fpic
 
-all: libsnap.so libsnap.a
+all: liblwc.so liblwc.a
 
-LIBSNAP_DEPS=src/snapper.o src/shared_malloc.o src/shared_ht.o src/shared_llist.o
-libsnap.so: $(LIBSNAP_DEPS)
-	$(CC) -shared $(LIBSNAP_DEPS) -o libsnap.so
+LIBLWC_DEPS=src/lwc.o src/shared_malloc.o src/shared_ht.o src/shared_llist.o
+liblwc.so: $(LIBLWC_DEPS)
+	$(CC) -shared $(LIBLWC_DEPS) -o liblwc.so
 
-libsnap.a: $(LIBSNAP_DEPS)
-	ar -rc libsnap.a $(LIBSNAP_DEPS)
+liblwc.a: $(LIBLWC_DEPS)
+	ar -rc liblwc.a $(LIBLWC_DEPS)
 
 depend:
 	truncate -s 0 $(DEPFILE)
