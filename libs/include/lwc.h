@@ -9,26 +9,21 @@
 extern "C" {
 #endif
 
-/* special targets */
-#define LWC_TARGET_NOJUMP (-1)
+struct lwc_resource_specifier;
 
-#define LWC_FAILED (-1)
-#define LWC_SWITCHED (-2)
+/*
+ * system calls.
+ */
+	
+#define lwccreate(resources, numr, src, src_args, num_args, flags) syscall(546, resources, numr, src, src_args, num_args, flags)
+#define lwcswitch(to, to_args, num_to_args, src, src_args, numargs, susp) syscall(547, to, to_args, num_to_args, src, src_args, numargs, susp)
+#define lwcsuspendswitch(to, to_args, num_to_args, src, src_args, num_args) lwcswitch(to, to_args, num_to_args, src, src_args, num_args, 1)
+#define lwcdiscardswitch(to, to_args, num_to_args) lwcswitch(to, to_args, num_to_args, NULL, NULL, 0, 0)
+#define lwcoverlay(to, resources, numr) syscall(548, to, resources, numr)
 
-#include <string.h>
-#include <errno.h>
-
-
-
-/* resource types */
-#define LWC_RESOURCE_MEMORY	0x001
-#define LWC_RESOURCE_FILES		0x002
-#define LWC_RESOURCE_CREDENT	0x004
-
-/* resource options */
-#define LWC_RESOURCE_COPY		0x000
-#define LWC_RESOURCE_SHARE		0x008
-#define LWC_RESOURCE_UNMAP		0x010
+extern int Lwcdiscardswitch(int to, void *to_arg, size_t num_toargs);
+extern int Lwcsuspendswitch(int to, void *to_args, size_t num_toargs, int *src, void *src_args, size_t *num_args);
+extern int Lwccreate(struct lwc_resource_specifier *resources, size_t numr, int *src, void *src_arg, size_t *num_args, int flags);
 
 
 struct lwc_resource_specifier {
@@ -43,23 +38,36 @@ struct lwc_resource_specifier {
 			int to;
 		} descriptors;
 		struct {
-			int x;
-			/* not sure how to make this coarse yet */
+			char padding[1];
+			/* not coarse */
 		} credentials;
 	} sub;
 };
 
-#define lwccreate(resources, numr, src, src_arg) syscall(546, resources, numr, src, src_arg)
-#define lwcswitch(to, to_arg, src, src_arg, susp) syscall(547, to, to_arg, src, src_arg, susp)
-#define lwcsuspendswitch(to, to_arg, src, src_arg) lwcswitch(to, to_arg, src, src_arg, 1)
-#define lwcdiscardswitch(to, to_arg) lwcswitch(to, to_arg, NULL, NULL, 0)
-#define lwcoverlay(to, resources, numr) syscall(548, to, resources, numr)
+
+
+/* special targets */
+#define LWC_TARGET_NOJUMP (-1)
+
+/* user visible flags, note, should be disjoint from RETCREATE, etc */
+#define LWC_SUSPEND_ONLY 0x0008
+
+#define LWC_FAILED (-1)
+#define LWC_SWITCHED (-2)
+
+/* resource types */
+#define LWC_RESOURCE_MEMORY	0x001
+#define LWC_RESOURCE_FILES		0x002
+#define LWC_RESOURCE_CREDENT	0x004
+
+/* resource options */
+#define LWC_RESOURCE_COPY		0x000
+#define LWC_RESOURCE_SHARE		0x008
+#define LWC_RESOURCE_UNMAP		0x010
 
 #ifdef __cplusplus
 }
 #endif
-
-
 
 
 #endif
