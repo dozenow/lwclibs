@@ -21,7 +21,7 @@ overlay_cred : src/overlay_cred.o
 	$(CC) $(CFLAGS) src/overlay_cred.o $(LIBDIRS) -o $@
 
 correct3 : src/correct3.o
-	$(CC) $(CFLAGS) src/correct3.o $(LIBDIRS) -o $@
+	$(CC) $(CFLAGS) src/correct3.o $(LIBDIRS) -o $@ $(LIBS)
 
 correct2 : src/correct2.o
 	$(CC) $(CFLAGS) src/correct2.o $(LIBDIRS) -o $@

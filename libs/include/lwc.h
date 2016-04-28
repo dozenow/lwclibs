@@ -15,15 +15,16 @@ struct lwc_resource_specifier;
  * system calls.
  */
 	
-#define lwccreate(resources, numr, src, src_args, num_args, flags) syscall(546, resources, numr, src, src_args, num_args, flags)
-#define lwcswitch(to, to_args, num_to_args, src, src_args, numargs, susp) syscall(547, to, to_args, num_to_args, src, src_args, numargs, susp)
-#define lwcsuspendswitch(to, to_args, num_to_args, src, src_args, num_args) lwcswitch(to, to_args, num_to_args, src, src_args, num_args, 1)
-#define lwcdiscardswitch(to, to_args, num_to_args) lwcswitch(to, to_args, num_to_args, NULL, NULL, 0, 0)
-#define lwcoverlay(to, resources, numr) syscall(548, to, resources, numr)
+//extern int lwcdiscardswitch(int to, void *to_arg, int num_toargs);
+extern int lwcsuspendswitch(int to, void *to_args, int num_toargs, int *src, void *src_args, int *num_args);
+extern int lwcdiscardswitch(int to, void *to_arg, int num_toargs);
+extern int lwccreate(struct lwc_resource_specifier *resources, int numr, int *src, void *src_arg, int *num_args, int flags);
+extern int lwcoverlay(int from, struct lwc_resource_specifier *resources, int numr);
 
-extern int Lwcdiscardswitch(int to, void *to_arg, size_t num_toargs);
-extern int Lwcsuspendswitch(int to, void *to_args, size_t num_toargs, int *src, void *src_args, size_t *num_args);
-extern int Lwccreate(struct lwc_resource_specifier *resources, size_t numr, int *src, void *src_arg, size_t *num_args, int flags);
+extern int Lwccreate(struct lwc_resource_specifier *resources, int numr, int *src, void *src_arg, int *num_args, int flags);
+extern int Lwcdiscardswitch(int to, void *to_arg, int num_toargs);
+extern int Lwcsuspendswitch(int to, void *to_args, int num_toargs, int *src, void *src_args, int *num_args);
+
 
 
 struct lwc_resource_specifier {

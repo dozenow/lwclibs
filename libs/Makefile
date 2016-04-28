@@ -7,7 +7,10 @@ CFLAGS+=-fpic
 
 all: liblwc.so liblwc.a
 
-LIBLWC_DEPS=src/lwc.o src/shared_malloc.o src/shared_ht.o src/shared_llist.o
+src/lwc_asm.o : src/lwc.S
+	$(CC) -c src/lwc.S -o src/lwc_asm.o
+
+LIBLWC_DEPS=src/lwc.o src/shared_malloc.o src/shared_ht.o src/shared_llist.o src/lwc_asm.o
 liblwc.so: $(LIBLWC_DEPS)
 	$(CC) -shared $(LIBLWC_DEPS) -o liblwc.so
 

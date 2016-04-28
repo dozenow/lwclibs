@@ -7,11 +7,12 @@
 #include <stdlib.h>
 #include <stdlib.h>
 #include <time.h>
-
+#include <sys/stat.h>
 #include "lwc.h"
 
 int main() {
 
+	setuid(1001);
 	char *mbuf = mmap(NULL, 4096*10, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 	if (mbuf == MAP_FAILED) {
 		perror("Can't mmap. So many tears\n");
@@ -57,13 +58,13 @@ int main() {
 	sbuf[2] = 0;
 	sbuf[3] = 0;
 	void *src_arg;
-	size_t num_args = 1;
-	int new_lwc = lwccreate(&specs, 6, &src, &src_arg, &num_args, 0);
+	int num_args = 1;
+	int new_lwc = lwccreate(specs, 6, &src, &src_arg, &num_args, 0);
 	if (new_lwc == LWC_SWITCHED)
 		printf("Came out in first one with src=%d and arg=%d\n", src, (int) src_arg);
 	if (new_lwc >= 0) {
 		sbuf[lwc1] = src = new_lwc;
-		new_lwc = lwccreate(&specs, 6, &src, &src_arg, &num_args, 0);
+		new_lwc = lwccreate(specs, 6, &src, &src_arg, &num_args, 0);
 		if (new_lwc == LWC_SWITCHED)
 			printf("Came out in second one with src=%d and arg=%d\n", src, (int) src_arg);
 		if (new_lwc >= 0) {
