@@ -1,7 +1,24 @@
+	/*
+.macro DO_ERR
+   mov   %rax,%rdi
+   callq __error
+	mov   %rdi, (%rax)
+   mov    $-1,%rax
+.endm
+   */
+
+/* TODO: figure out stupid relocation shared library crap, needed for
+	apache. until then just drop errno stuff */
+.macro DO_ERR
+   mov $-1,%rax
+.endm
+  
 .text
+
 	
 .globl lwccreate
-lwccreate:  
+
+lwccreate:
    push   %rbp
    mov    %rsp,%rbp
 	/*
@@ -16,7 +33,7 @@ lwccreate:
    mov    %rcx,%r10
    syscall
    jnc out_c
-   mov    $-1,%rax
+   DO_ERR
 out_c:  
    pop    %rbp
    retq
@@ -37,7 +54,7 @@ lwcsuspendswitch:
    mov    %rcx,%r10
    syscall
    jnc out_swx
-   mov    $-1,%rax
+	DO_ERR
 out_swx:  
    pop    %rbp
    retq
@@ -55,7 +72,7 @@ lwcdiscardswitch:
    mov    %rcx,%r10
    syscall
    jnc out_dswx
-   mov    $-1,%rax
+	DO_ERR
 out_dswx:
    pop    %rbp
    retq
@@ -73,11 +90,7 @@ lwcoverlay:
    mov    %rcx,%r10
    syscall
    jnc out_ovl
-   mov    $-1,%rax
+	DO_ERR
 out_ovl:  
    pop    %rbp
    retq
-
-
-
-

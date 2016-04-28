@@ -48,7 +48,7 @@
 #include "ap_mmn.h"
 #include "apr_poll.h"
 
-#include "snapper.h"
+#include "lwc.h"
 
 #include <stdlib.h>
 
@@ -605,19 +605,23 @@ static void child_main(int child_num_arg, int child_bucket)
     bucket_alloc = apr_bucket_alloc_create(pchild);
 
 
-    int snap_fd;
-    int snap_src;
-    int snap_rv = snap(SNAP_TARGET_NOJUMP, &snap_src, SNAP_SHARE_FD);
+	/* share the file table */
+	struct lwc_resource_specifier specs[1];
+	specs[0].flags = LWC_RESOURCE_FILES | LWC_RESOURCE_SHARE;
+	specs[0].sub.descriptors.from = specs[0].sub.descriptors.to = -1;
 
-    if (snap_rv == SNAP_FAILED) {
+    int snap_fd;
+    int snap_rv = lwccreate(specs, 1, NULL, NULL, NULL, 0);
+
+    if (snap_rv == LWC_SWITCHED) {
+	    /* nothing */
+    } else if (snap_rv >= 0) {
+	    snap_fd = snap_rv;
+    } else {
 	    ap_log_error(APLOG_MARK, APLOG_EMERG, errno, ap_server_conf, APLOGNO(00157)
 	                 "Could not create snapshot");
 	    clean_child_exit(APEXIT_CHILDSICK);
-    } else if (snap_rv == SNAP_JUMPED) {
-	    snap_fd = snap_src;
-    } else {
-	    snap_fd = snap_rv;
-    }
+    } 
 
 
 
@@ -636,7 +640,7 @@ static void child_main(int child_num_arg, int child_bucket)
 
         if ((ap_max_requests_per_child > 0
              && requests_this_child++ >= ap_max_requests_per_child)) {
-	        snap(snap_fd, NULL, SNAP_NOTHING);
+	        lwcdiscardswitch(snap_fd, NULL, 0);
 	        ap_log_error(APLOG_MARK, APLOG_EMERG, errno, ap_server_conf, APLOGNO(00157)
 	                     "Hit unreachable point, snap failed");
             clean_child_exit(APEXIT_CHILDSICK);

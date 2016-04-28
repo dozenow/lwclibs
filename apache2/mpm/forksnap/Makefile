@@ -1,11 +1,11 @@
 APACHECTL=/opt/apache2/bin/apachectl
 APXS=/opt/apache2/bin/apxs
-SNAPDIR=/home/litton/snap
-SNAPLIB=$(SNAPDIR)/libs/include/
+LWCDIR=/home/litton/snap
+LWCLIB=$(LWCDIR)/libs/include/
 
 
-.libs/forksnap.so: forksnap.c $(SNAPDIR)/libs/libsnap.a
-	$(APXS) -i -I $(SNAPLIB)  -c forksnap.c $(SNAPDIR)/libs/libsnap.a
+.libs/forksnap.so: forksnap.c $(LWCDIR)/libs/liblwc.a
+	$(APXS) -i -I $(LWCLIB)  -c forksnap.c $(LWCDIR)/libs/liblwc.a
 
 clean:
 	rm -rf *.la *~ *.o *.slo .libs 

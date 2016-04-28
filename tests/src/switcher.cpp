@@ -5,6 +5,7 @@
 #include <string.h>
 #include <strings.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #include <sys/capsicum.h>
 
@@ -44,17 +45,17 @@ void child_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
 		int src;
 		stack_buf[1] = private_buf[1] = (private_buf[1]+1);
 		int ns = Lwcsuspendswitch(shared_buf[IDX_ORIG], NULL, 0, NULL, NULL, NULL);
-#if 0
-		cerr << "In child with ns=" << ns << " and src=" << src << " with stack_buf and private buf = " << (int)stack_buf[1] << ' ' << (int)private_buf[1] << endl;
-		cerr << "Child UID is " << getuid() << " and capped: " << (bool) cap_sandboxed() << endl;
+		if (0) {
+			cerr << "In child with ns=" << ns << " and src=" << src << " with stack_buf and private buf = " << (int)stack_buf[1] << ' ' << (int)private_buf[1] << endl;
+			cerr << "Child UID is " << getuid() << " and capped: " << (bool) cap_sandboxed() << endl;
 
-		int fd = open("/tmp/foobar", O_RDWR | O_CREAT);
-		if (fd < 0) {
-			perror("file open in child: ");
-		} else {
-			close(fd);
+			int fd = open("/tmp/foobar", O_RDWR | O_CREAT);
+			if (fd < 0) {
+				perror("file open in child: ");
+			} else {
+				close(fd);
+			}
 		}
-#endif
 
 
 	}
@@ -67,23 +68,22 @@ void child_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
 
 
 void parent_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
-	int i = 0;
 	for(;;) {
 		int src;
 		int ns = Lwcsuspendswitch(shared_buf[IDX_CHLD], NULL, 0, NULL, NULL, NULL);
-#if 0
-		cerr << "In parent with ns=" << ns << " and src=" << src << " with stack_buf and private buf = " << (int)stack_buf[1] << ' ' << (int) private_buf[1] << endl;
-		cerr << "Parent UID is " << getuid() << " and capped: " << (bool) cap_sandboxed() << endl;
-		//sleep(1);
+		if (0) {
+			cerr << "In parent with ns=" << ns << " and src=" << src << " with stack_buf and private buf = " << (int)stack_buf[1] << ' ' << (int) private_buf[1] << endl;
+			cerr << "Parent UID is " << getuid() << " and capped: " << (bool) cap_sandboxed() << endl;
+			//sleep(1);
 
-		int fd = open("/tmp/foobar", O_RDWR | O_CREAT);
-		if (fd < 0) {
-			perror("file open in parent: ");
-		} else {
-			close(fd);
-			unlink("/tmp/foobar");
+			int fd = open("/tmp/foobar", O_RDWR | O_CREAT);
+			if (fd < 0) {
+				perror("file open in parent: ");
+			} else {
+				close(fd);
+				unlink("/tmp/foobar");
+			}
 		}
-#endif
 
 	}
 }
@@ -91,7 +91,6 @@ void parent_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
 
 
 int main(int argc, char *argv[]) {
-
 
 	int *private_buf = (int*)mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 	if (private_buf == MAP_FAILED) {
@@ -121,23 +120,26 @@ int main(int argc, char *argv[]) {
 	specs[0].flags = LWC_RESOURCE_FILES | LWC_RESOURCE_SHARE;
 	specs[0].sub.descriptors.from = specs[0].sub.descriptors.to = -1;
 
-	int src,cur;
+	int cur;
 	cur = Lwccreate(specs, 1, NULL, NULL, NULL, 0);
 	if (cur >= 0) {
 		shared_buf[IDX_ORIG] = cur;
 
 		setuid(1001);
+		/*
 		if (cap_enter() != 0) {
 			perror("Cap enter: ");
 			return 72;
 		}
+		*/
 
 		// create child context
 
 		cur =  Lwccreate(specs, 1, NULL, NULL, NULL, LWC_SUSPEND_ONLY);
 		if (cur >= 0) {
 			shared_buf[IDX_CHLD] = cur;
-		}
+			Lwcdiscardswitch(cur, NULL, 0);
+		} 
 
 		child_work_function(stack_buf, shared_buf, private_buf);
 		cerr << "Child improperly exited?" << endl;

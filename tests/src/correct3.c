@@ -57,7 +57,7 @@ int main() {
 
 	sbuf[2] = 0;
 	sbuf[3] = 0;
-	void *src_arg;
+	void *src_arg = (void*)24;;
 	int num_args = 1;
 	int new_lwc = lwccreate(specs, 6, &src, &src_arg, &num_args, 0);
 	if (new_lwc == LWC_SWITCHED)

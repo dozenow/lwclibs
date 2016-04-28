@@ -1,5 +1,5 @@
 syscall:freebsd:lwccreate:entry {
-	star4 = 4; /*(int) copyin(arg4, 4);*/
+	star4 = (int) copyin(arg4, 4);
 	printf("lwccreate(0x%lx, %d, 0x%lx, 0x%lx, 0x%lx(%d), 0x%x)", arg0, arg1, arg2, arg3, arg4, star4, arg5);
 }
 
@@ -8,12 +8,11 @@ syscall::lwccreate:return {
 }
 
 syscall:freebsd:lwcsuspendswitch:entry {
-	star5 = 5; /*(int) copyin(arg5, 4);*/
+	star5 = (int) copyin(arg5, 4);
 	printf("lwcsuspendswitch(%d, 0x%lx, %d, 0x%lx, 0x%lx, 0x%lx(%d))", arg0, arg1, arg2, arg3, arg4, arg5, star5);
 }
 
 syscall:freebsd:lwcdiscardswitch:entry {
-	star5 = 5; /*(int) copyin(arg5, 4);*/
 	printf("lwcdiscardswitch(%d, 0x%lx, %d)", arg0, arg1, arg2);
 }
 
@@ -29,8 +28,10 @@ syscall::lwcsuspendswitch:return {
 	printf("lwcsuspendswitch rv = %d", arg1);
 }
 
+
+
 syscall::lwcdiscardswitch:return {
-	printf("lwcsuspendswitch rv = %d", arg1);
+	printf("lwcdiscardswitch rv = %d", arg1);
 }
 
 lwc:kern_lwc:suspendswitch:syslwc {
@@ -61,18 +62,9 @@ lwc:kern_lwc:forkvm:syslwc {
 	printf("current vm forked into lwc 0x%lx", arg0);
 }
 
-/*fbt:kernel:snap_fd:entry {
-	printf("Entering snap_fd, have s of ");
-	self->s = args[1];
-	print(*args[1]);
+lwc:kern_lwc:sharevm:syslwc {
+	printf("current shared forked into lwc 0x%lx", arg0);
 }
-
-fbt:kernel:snap_fd:return {
-	printf("exiting snap_fd, have s of ");
-	print(*(self->s));
-}
-*/
-
 
 lwc:kern_lwc:forkfd:syslwc {
 	printf("current fd forked into lwc 0x%lx", arg0);
@@ -80,7 +72,7 @@ lwc:kern_lwc:forkfd:syslwc {
 
 lwc:kern_lwc:sharefd:syslwc {
 	/* print(*args[0]); show all of the struct, */
-	printf("current fd shared with lwc 0x%lx, refcnt=%d", arg0, args[0]->se_fdesc->fd_refcnt);
+	printf("current fd shared with lwc 0x%lx", arg0);
 }
 
 lwc:kern_lwc:forkcred:syslwc {

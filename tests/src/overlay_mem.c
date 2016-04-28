@@ -50,8 +50,8 @@ int main() {
 	sbuf[2] = 0;
 	sbuf[3] = 0;
 	void *src_args[1];
-	size_t num_args = 1;
-	int new_lwc = lwccreate(&specs, 1, &src, src_args, &num_args, 0);
+	int num_args = 1;
+	int new_lwc = lwccreate(specs, 1, &src, src_args, &num_args, 0);
 	if (new_lwc == LWC_SWITCHED)
 		printf("Came out in first one with src=%d and arg=%d\n", src, (int) src_args[0]);
 	if (new_lwc >= 0) {
@@ -60,7 +60,7 @@ int main() {
 		specs[1].sub.memory.start = (vm_offset_t)mbuf + 0;
 		specs[1].sub.memory.end = (vm_offset_t)mbuf + 10*4096;
 		num_args = 1;
-		new_lwc = lwccreate(&specs, 2, &src, &src_args, &num_args, 0);
+		new_lwc = lwccreate(specs, 2, &src, &src_args, &num_args, 0);
 		if (new_lwc == LWC_SWITCHED) { 
 			printf("Came out in second one with src=%d and arg=%d\n", src, (int) src_args[0]);
 			//getchar();
@@ -69,12 +69,12 @@ int main() {
 				specs[i].flags = LWC_RESOURCE_MEMORY | LWC_RESOURCE_SHARE;
 				specs[i].sub.memory.start = (vm_offset_t)mbuf + (2*i*4096);
 				specs[i].sub.memory.end = (vm_offset_t)mbuf + ((2*i+1)*4096);
-				printf("overlaying 0x%lx - 0x%lx %d\n", (unsigned long) specs[i].sub.memory.start,
-				       (unsigned long) specs[i].sub.memory.end, specs[i].sub.memory.end - specs[i].sub.memory.start);
+				printf("overlaying 0x%lx - 0x%lx %ld\n", (unsigned long) specs[i].sub.memory.start,
+				       (unsigned long) specs[i].sub.memory.end, (specs[i].sub.memory.end - specs[i].sub.memory.start));
 			}
 			printf("doing overlay\n");
 			//getchar();
-			lwcoverlay(sbuf[lwc1], &specs, 5);
+			lwcoverlay(sbuf[lwc1], specs, 5);
 			printf("Overlay done\n");
 			//getchar();
 			for(size_t i = 0; i < 5; i++) {
@@ -104,7 +104,7 @@ int main() {
 		memset(mbuf, sbuf[2], 4096*10);
 		sbuf[3] = (sbuf[3] + 1) % 2;
 		printf("Switching to %d\n", sbuf[sbuf[3]]);
-		lwcdiscardswitch(sbuf[sbuf[3]], sbuf[2], 1);
+		lwcdiscardswitch(sbuf[sbuf[3]], &sbuf[2], 1);
 		printf("Oops!\n");
 		return EXIT_FAILURE;
 	}

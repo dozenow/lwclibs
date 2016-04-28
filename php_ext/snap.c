@@ -29,7 +29,7 @@
 #include "php_ini.h"
 #include "ext/standard/info.h"
 #include "php_snap.h"
-#include "snapper.h"
+#include "lwc.h"
 #include "shared_ht.h"
 #include "SAPI.h"
 
@@ -101,13 +101,17 @@ PHP_FUNCTION(snapcache)
 	char buf[128];
 	int retval = 42;
 	if (time(NULL) < expiration) {
-		int rv = snap(SNAP_TARGET_NOJUMP, NULL, SNAP_SHARE_FD);
+		/* share the file table */
+		struct lwc_resource_specifier specs[1];
+		specs[0].flags = LWC_RESOURCE_FILES | LWC_RESOURCE_SHARE;
+		specs[0].sub.descriptors.from = specs[0].sub.descriptors.to = -1;
+		int rv = lwccreate(specs, 1, NULL, NULL, NULL, 0);
 		snprintf(buf, sizeof(buf), "snap rv = %d\n", rv);
 		write(snap_fd, buf, strlen(buf));
 		php_printf("%s", buf);
-		if (rv == SNAP_JUMPED) {
+		if (rv == LWC_SWITCHED) {
 			retval = 0;
-		} else if (rv == SNAP_FAILED) {
+		} else if (rv == LWC_FAILED) {
 			retval = -1;
 			php_error(E_ERROR, "SNAP FAILED: %s\n", strerror(errno));
 		} else if (rv >= 0) {
@@ -263,7 +267,7 @@ PHP_RINIT_FUNCTION(snap)
 		snprintf(buf, sizeof(buf), "present in HT, val is %d. Trying to snap\n", fd);
 		write(snap_fd, buf, strlen(buf));
 		free_ht_iterator(it);
-		int ret = snap(fd, NULL, SNAP_NOTHING);
+		int ret = lwcdiscardswitch(fd, NULL, 0);
 		snprintf(buf, sizeof(buf), "arrived post snap: rv=%d, err=%s\n", ret, strerror(errno));
 		write(snap_fd, buf, strlen(buf));
 		php_error(E_ERROR, buf);

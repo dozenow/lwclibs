@@ -21,7 +21,7 @@ if test "$PHP_SNAP" != "no"; then
 
   dnl # --with-snap -> check with-path
   SEARCH_PATH="/usr/local /usr /usr/home/litton/snap/libs"     # you might want to change this
-  SEARCH_FOR="/include/snapper.h"  # you most likely want to change this
+  SEARCH_FOR="/include/lwc.h"  # you most likely want to change this
   if test -r $PHP_SNAP/$SEARCH_FOR; then # path given as parameter
     SNAP_DIR=$PHP_SNAP
   else # search default path list
@@ -45,11 +45,11 @@ if test "$PHP_SNAP" != "no"; then
 
   dnl PHP_ADD_LIBRARY(snap)
 
-  PHP_ADD_LIBRARY_WITH_PATH(snap, /usr/home/litton/snap/libs, SNAP_SHARED_LIBADD)
+  PHP_ADD_LIBRARY_WITH_PATH(lwc, /usr/home/litton/snap/libs, SNAP_SHARED_LIBADD)
 
   dnl # --with-snap -> check for lib and symbol presence
-  dnl LIBNAME=snap # you may want to change this
-  dnl LIBSYMBOL=snap # you most likely want to change this 
+  dnl LIBNAME=lwc # you may want to change this
+  dnl LIBSYMBOL=lwc # you most likely want to change this 
 
 
   dnl PHP_CHECK_LIBRARY($LIBNAME,$LIBSYMBOL,
