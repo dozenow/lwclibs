@@ -1,5 +1,5 @@
 syscall:freebsd:lwccreate:entry {
-	star4 = (int) copyin(arg4, 4);
+	star4 = arg4 ? (int) copyin(arg4, 4) : -1;
 	printf("lwccreate(0x%lx, %d, 0x%lx, 0x%lx, 0x%lx(%d), 0x%x)", arg0, arg1, arg2, arg3, arg4, star4, arg5);
 }
 
@@ -8,7 +8,7 @@ syscall::lwccreate:return {
 }
 
 syscall:freebsd:lwcsuspendswitch:entry {
-	star5 = (int) copyin(arg5, 4);
+	star5 = arg5 ? (int) copyin(arg5, 4) : -1;
 	printf("lwcsuspendswitch(%d, 0x%lx, %d, 0x%lx, 0x%lx, 0x%lx(%d))", arg0, arg1, arg2, arg3, arg4, arg5, star5);
 }
 
@@ -29,7 +29,6 @@ syscall::lwcsuspendswitch:return {
 }
 
 
-
 syscall::lwcdiscardswitch:return {
 	printf("lwcdiscardswitch rv = %d", arg1);
 }
@@ -44,6 +43,10 @@ lwc:kern_lwc:discardswitch:syslwc {
 
 lwc:kern_lwc:alloc:syslwc {
 	printf("allocated lwc 0x%lx", arg0);
+}
+
+lwc:kern_lwc:createdproto:syslwc {
+	printf("createproto 0x%lx", arg0);
 }
 
 lwc:kern_lwc:copy:syslwc {
@@ -81,5 +84,5 @@ lwc:kern_lwc:forkcred:syslwc {
 
 lwc:kern_lwc:sharecred:syslwc {
 	/* print(*args[0]); show all of the struct, */
-	printf("current cred shared with lwc 0x%lx, refcnt=%d", arg0, args[0]->se_cred->cr_ref);
+	printf("current cred shared with lwc 0x%lx", arg0);
 }

@@ -45,7 +45,7 @@ lwcsuspendswitch:
    mov    %rcx,%r10
    syscall
    jnc out_swx
-    DO_ERR
+   DO_ERR
 out_swx:  
    pop    %rbp
    retq
@@ -63,7 +63,7 @@ lwcdiscardswitch:
    mov    %rcx,%r10
    syscall
    jnc out_dswx
-    DO_ERR
+   DO_ERR
 out_dswx:
    pop    %rbp
    retq
@@ -81,7 +81,7 @@ lwcoverlay:
    mov    %rcx,%r10
    syscall
    jnc out_ovl
-    DO_ERR
+   DO_ERR
 out_ovl:  
    pop    %rbp
    retq

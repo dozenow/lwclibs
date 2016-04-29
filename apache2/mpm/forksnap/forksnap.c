@@ -610,23 +610,24 @@ static void child_main(int child_num_arg, int child_bucket)
 	specs[0].flags = LWC_RESOURCE_FILES | LWC_RESOURCE_SHARE;
 	specs[0].sub.descriptors.from = specs[0].sub.descriptors.to = -1;
 
-    int snap_fd;
-    int snap_rv = lwccreate(specs, 1, NULL, NULL, NULL, 0);
+	int snap_fd = -1;
+	int args = 1;
+	int snap_rv = lwccreate(specs, 1, NULL, &snap_fd, &args, 0);
 
-    if (snap_rv == LWC_SWITCHED) {
-	    /* nothing */
-    } else if (snap_rv >= 0) {
-	    snap_fd = snap_rv;
-    } else {
-	    ap_log_error(APLOG_MARK, APLOG_EMERG, errno, ap_server_conf, APLOGNO(00157)
-	                 "Could not create snapshot");
-	    clean_child_exit(APEXIT_CHILDSICK);
-    } 
+	if (snap_rv == LWC_SWITCHED) {
+		/* the context we want to switch back to is passed back to us. */
+	} else if (snap_rv >= 0) {
+		snap_fd = snap_rv;
+	} else {
+		ap_log_error(APLOG_MARK, APLOG_EMERG, errno, ap_server_conf, APLOGNO(00157)
+		             "Could not create snapshot");
+		clean_child_exit(APEXIT_CHILDSICK);
+	} 
 
 
 
-    /* die_now is set when AP_SIG_GRACEFUL is received in the child;
-     * shutdown_pending is set when SIGTERM is received when running
+	/* die_now is set when AP_SIG_GRACEFUL is received in the child;
+	 * shutdown_pending is set when SIGTERM is received when running
      * in single process mode.  */
     while (!die_now && !shutdown_pending) {
         conn_rec *current_conn;
@@ -640,7 +641,7 @@ static void child_main(int child_num_arg, int child_bucket)
 
         if ((ap_max_requests_per_child > 0
              && requests_this_child++ >= ap_max_requests_per_child)) {
-	        lwcdiscardswitch(snap_fd, NULL, 0);
+	        lwcdiscardswitch(snap_fd, &snap_fd, 1);
 	        ap_log_error(APLOG_MARK, APLOG_EMERG, errno, ap_server_conf, APLOGNO(00157)
 	                     "Hit unreachable point, snap failed");
             clean_child_exit(APEXIT_CHILDSICK);
