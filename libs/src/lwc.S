@@ -1,22 +1,12 @@
-
 .macro DO_ERR
-   mov   %rax,%rdi
-   callq __error
-    mov   %rdi, (%rax)
+   mov   %rax,%r12
+   callq __error@plt
+   mov   %r12, (%rax)
    mov    $-1,%rax
 .endm
 
-
-/* TODO: figure out stupid relocation shared library crap, needed for
-    apache. until then just drop errno stuff */
-/*
-.macro DO_ERR
-   mov $-1,%rax
-.endm
-  */
 .text
 
-    
 .globl lwccreate
 
 lwccreate:

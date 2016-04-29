@@ -73,7 +73,7 @@ int main() {
 	}
 
 	if (new_lwc == LWC_FAILED) {
-		printf("LWC failed\n");
+		perror("LWC failed\n");
 		return EXIT_FAILURE;
 	}
 
