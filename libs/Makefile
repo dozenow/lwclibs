@@ -5,7 +5,7 @@ DEPFILE = .depends
 
 CFLAGS+=-fPIC
 
-all: liblwc.a liblwc.so
+all: liblwc.a
 
 src/lwc_asm.o : src/lwc.S
 	$(CC) -c src/lwc.S -o src/lwc_asm.o

@@ -1,27 +1,28 @@
-	/*
+
 .macro DO_ERR
    mov   %rax,%rdi
    callq __error
-	mov   %rdi, (%rax)
+    mov   %rdi, (%rax)
    mov    $-1,%rax
 .endm
-   */
+
 
 /* TODO: figure out stupid relocation shared library crap, needed for
-	apache. until then just drop errno stuff */
+    apache. until then just drop errno stuff */
+/*
 .macro DO_ERR
    mov $-1,%rax
 .endm
-  
+  */
 .text
 
-	
+    
 .globl lwccreate
 
 lwccreate:
    push   %rbp
    mov    %rsp,%rbp
-	/*
+    /*
    mov    %rdi,-0x10(%rbp)
    mov    %esi,-0x14(%rbp)
    mov    %rdx,-0x20(%rbp)
@@ -37,12 +38,12 @@ lwccreate:
 out_c:  
    pop    %rbp
    retq
-	
+    
 .globl lwcsuspendswitch
 lwcsuspendswitch:  
    push   %rbp
    mov    %rsp,%rbp
-	/*
+    /*
    mov    %rdi,-0x10(%rbp)
    mov    %esi,-0x14(%rbp)
    mov    %rdx,-0x20(%rbp)
@@ -54,7 +55,7 @@ lwcsuspendswitch:
    mov    %rcx,%r10
    syscall
    jnc out_swx
-	DO_ERR
+    DO_ERR
 out_swx:  
    pop    %rbp
    retq
@@ -63,7 +64,7 @@ out_swx:
 lwcdiscardswitch:  
    push   %rbp
    mov    %rsp,%rbp
-	/*
+    /*
    mov    %rdi,-0x10(%rbp)
    mov    %esi,-0x14(%rbp)
    mov    %rdx,-0x20(%rbp)
@@ -72,7 +73,7 @@ lwcdiscardswitch:
    mov    %rcx,%r10
    syscall
    jnc out_dswx
-	DO_ERR
+    DO_ERR
 out_dswx:
    pop    %rbp
    retq
@@ -81,7 +82,7 @@ out_dswx:
 lwcoverlay: 
    push   %rbp
    mov    %rsp,%rbp
-	/*
+    /*
    mov    %rdi,-0x10(%rbp)
    mov    %esi,-0x14(%rbp)
    mov    %rdx,-0x20(%rbp)
@@ -90,7 +91,26 @@ lwcoverlay:
    mov    %rcx,%r10
    syscall
    jnc out_ovl
-	DO_ERR
+    DO_ERR
 out_ovl:  
    pop    %rbp
    retq
+
+.globl lwcrestrict
+lwcrestrict: 
+   push   %rbp
+   mov    %rsp,%rbp
+   /*
+   mov    %rdi,-0x10(%rbp)
+   mov    %esi,-0x14(%rbp)
+   mov    %rdx,-0x20(%rbp)
+   */
+   mov    $550,%eax
+   mov    %rcx,%r10
+   syscall
+   jnc out_res
+   DO_ERR
+out_res:  
+   pop    %rbp
+   retq
+
