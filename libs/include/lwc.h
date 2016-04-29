@@ -57,15 +57,28 @@ struct lwc_resource_specifier {
 #define LWC_FAILED (-1)
 #define LWC_SWITCHED (-2)
 
+
 /* resource types */
 #define LWC_RESOURCE_MEMORY	0x001
 #define LWC_RESOURCE_FILES		0x002
 #define LWC_RESOURCE_CREDENT	0x004
 
 /* resource options */
-#define LWC_RESOURCE_COPY		0x000
-#define LWC_RESOURCE_SHARE		0x008
-#define LWC_RESOURCE_UNMAP		0x010
+#define LWC_RESOURCE_COPY				0x000
+#define LWC_RESOURCE_SHARE				0x008
+#define LWC_RESOURCE_UNMAP				0x010
+#define LWC_RESOURCE_MAY_OVERLAY		0x020
+
+/* aliases for the sane */
+#define LWCR_COPY				LWC_RESOURCE_COPY
+#define LWCR_SHARE			LWC_RESOURCE_SHARE
+#define LWCR_UNMAP			LWC_RESOURCE_UNMAP
+#define LWCR_MAY_OVERLAY	LWC_RESOURCE_MAY_OVERLAY
+
+#define LWC_RESOURCE_MEMORY	LWCR_MEMORY 
+#define LWC_RESOURCE_FILES		LWCR_FILES	 
+#define LWC_RESOURCE_CREDENT	LWCR_CREDENT
+
 
 #ifdef __cplusplus
 }
