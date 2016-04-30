@@ -17,8 +17,7 @@
 using namespace std;
 
 #define IDX_ORIG 0
-#define IDX_SUPER 1
-#define IDX_CHLD 2
+#define IDX_CHLD 1
 
 
 struct timespec diff(struct timespec *start, struct timespec *end)
@@ -42,18 +41,19 @@ void child_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
 	clock_gettime(CLOCK_REALTIME, &start);
 
 	while(private_buf[1] < 10000) {
-		int src;
+		int src = -1;
 		stack_buf[1] = private_buf[1] = (private_buf[1]+1);
 		int ns = Lwcsuspendswitch(shared_buf[IDX_ORIG], NULL, 0, NULL, NULL, NULL);
 		if (0) {
 			cerr << "In child with ns=" << ns << " and src=" << src << " with stack_buf and private buf = " << (int)stack_buf[1] << ' ' << (int)private_buf[1] << endl;
 			cerr << "Child UID is " << getuid() << " and capped: " << (bool) cap_sandboxed() << endl;
-
+			sleep(1);
 			int fd = open("/tmp/foobar", O_RDWR | O_CREAT);
 			if (fd < 0) {
 				perror("file open in child: ");
 			} else {
 				close(fd);
+				unlink("/tmp/foobar");
 			}
 		}
 
@@ -69,12 +69,12 @@ void child_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
 
 void parent_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
 	for(;;) {
-		int src;
+		int src = -1;
 		int ns = Lwcsuspendswitch(shared_buf[IDX_CHLD], NULL, 0, NULL, NULL, NULL);
 		if (0) {
 			cerr << "In parent with ns=" << ns << " and src=" << src << " with stack_buf and private buf = " << (int)stack_buf[1] << ' ' << (int) private_buf[1] << endl;
 			cerr << "Parent UID is " << getuid() << " and capped: " << (bool) cap_sandboxed() << endl;
-			//sleep(1);
+			sleep(1);
 
 			int fd = open("/tmp/foobar", O_RDWR | O_CREAT);
 			if (fd < 0) {
@@ -91,6 +91,7 @@ void parent_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
 
 
 int main(int argc, char *argv[]) {
+
 
 	int *private_buf = (int*)mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 	if (private_buf == MAP_FAILED) {
@@ -121,41 +122,26 @@ int main(int argc, char *argv[]) {
 	specs[0].sub.descriptors.from = specs[0].sub.descriptors.to = -1;
 
 	int cur;
-	cur = Lwccreate(specs, 1, NULL, NULL, NULL, 0);
+	cur = Lwccreate(specs, 1, NULL, NULL, NULL, LWC_SUSPEND_ONLY);
 	if (cur >= 0) {
 		shared_buf[IDX_ORIG] = cur;
 
-		setuid(1001);
-		/*
-		if (cap_enter() != 0) {
-			perror("Cap enter: ");
-			return 72;
-		}
-		*/
+		Lwcdiscardswitch(cur, NULL, 0);
 
-		// create child context
-
-		cur =  Lwccreate(specs, 1, NULL, NULL, NULL, LWC_SUSPEND_ONLY);
-		if (cur >= 0) {
-			shared_buf[IDX_CHLD] = cur;
-			Lwcdiscardswitch(cur, NULL, 0);
-		} 
-
-		child_work_function(stack_buf, shared_buf, private_buf);
-		cerr << "Child improperly exited?" << endl;
-		exit(1);
 			
 	} else if (cur == LWC_SWITCHED) {
-		cur = Lwccreate(specs, 1, NULL, NULL, NULL, LWC_SUSPEND_ONLY);
-		if (cur >= 0) {
-			int old = shared_buf[IDX_ORIG];
-			shared_buf[IDX_ORIG] = cur;
-			close(old);
-		}
 
+		if (shared_buf[IDX_CHLD] == -1) {
+			cur = Lwccreate(specs, 1, NULL, NULL, NULL, LWC_SUSPEND_ONLY);
+			if (cur >= 0) {
+				shared_buf[IDX_CHLD] = cur;
+			} else {
+				child_work_function(stack_buf, shared_buf, private_buf);
+			}
+		}
 		parent_work_function(stack_buf, shared_buf, private_buf);
-		cerr << "Parent improperly exited?" << endl;
-		exit(2);
+
+
 	}
 
 	return 0;

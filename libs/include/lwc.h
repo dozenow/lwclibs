@@ -49,7 +49,7 @@ struct lwc_resource_specifier {
 
 
 /* special targets */
-#define LWC_TARGET_NOJUMP (-1)
+#define LWC_TARGET_SELF	(-1)
 
 /* user visible flags, note, should be disjoint from RETCREATE, etc */
 #define LWC_SUSPEND_ONLY	0x0008
