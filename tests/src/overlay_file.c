@@ -57,10 +57,10 @@ int main() {
 
 
 	printf("sbuf[parent] + 1 = %d\n", sbuf[parent]+1);
-	new_lwc = lwccreate(&specs, 1, NULL, NULL, 0, 0);
+	new_lwc = lwccreate(specs, 1, NULL, NULL, 0, 0);
 	if (new_lwc >= 0) {
 		sbuf[lwc1] = new_lwc;
-		new_lwc = lwccreate(&specs, 1, NULL, NULL, 0, 0);
+		new_lwc = lwccreate(specs, 1, NULL, NULL, 0, 0);
 		if (new_lwc >= 0) {
 			sbuf[lwc2] = new_lwc;
 		} else if (new_lwc == LWC_FAILED) {
@@ -77,7 +77,7 @@ int main() {
 					fprintf(stderr, "overlaying fd2 (%d)...\n", fd2);
 					specs[0].flags = LWC_RESOURCE_FILES | LWC_RESOURCE_COPY;
 					specs[0].sub.descriptors.from = specs[0].sub.descriptors.to = fd2;
-					lwcoverlay(sbuf[parent], &specs, 1);
+					lwcoverlay(sbuf[parent], specs, 1);
 					char str[] = "lwc 2 writing into fd2\n";
 					fprintf(stderr, "%s", str);
 					if (write(fd2, str, sizeof(str)-1) == -1) {
@@ -102,7 +102,7 @@ int main() {
 				fprintf(stderr, "overlaying fd1 (%d)...\n", fd1);
 				specs[0].flags = LWC_RESOURCE_FILES | LWC_RESOURCE_COPY;
 				specs[0].sub.descriptors.from = specs[0].sub.descriptors.to = fd1;
-				lwcoverlay(sbuf[parent], &specs, 1);
+				lwcoverlay(sbuf[parent], specs, 1);
 				char str[] = "lwc 1 writing into fd1\n";
 				fprintf(stderr, "%s", str);
 				if (write(fd1, str, sizeof(str)-1) == -1) {

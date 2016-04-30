@@ -47,22 +47,22 @@ int main() {
 
 
 	void *src_arg = (void*)20;;
-	size_t num_args = 1;
+	int num_args = 1;
 	printf("my uid before first context create is %d\n", getuid());
-	int new_lwc = lwccreate(&specs, 1, &src, &src_arg, &num_args, 0);
+	int new_lwc = lwccreate(specs, 1, &src, src_arg, &num_args, 0);
 	if (new_lwc == LWC_SWITCHED) {
 		setuid(1001);
 		while(sbuf[2] < 10 && new_lwc != LWC_FAILED) {
 			printf("Came out in first one with src=%d and arg=%d and uid=%d\n", src, (int) src_arg, getuid());
 			sbuf[2]++;
 			num_args = 1;
-			new_lwc = lwcsuspendswitch(sbuf[lwc2], NULL, 0, &src, &src_arg, &num_args);
+			new_lwc = lwcsuspendswitch(sbuf[lwc2], NULL, 0, &src, src_arg, &num_args);
 		}
 	} else if (new_lwc >= 0) {
 		sbuf[lwc1] = src = new_lwc;
 		printf("my uid before second context create is %d\n", getuid());
 		num_args = 1;
-		new_lwc = lwccreate(&specs, 1, &src, &src_arg, &num_args, 0);
+		new_lwc = lwccreate(specs, 1, &src, src_arg, &num_args, 0);
 		if (new_lwc >= 0) {
 			sbuf[lwc2] = new_lwc;
 			lwcdiscardswitch(sbuf[lwc1], NULL, 0);
@@ -70,7 +70,7 @@ int main() {
 		while(sbuf[2] < 10 && new_lwc != LWC_FAILED) {
 			if (sbuf[2] % 2 == 0) {
 				specs[0].flags = LWC_RESOURCE_CREDENT | LWC_RESOURCE_COPY;
-				lwcoverlay(sbuf[lwc1], &specs, 1);
+				lwcoverlay(sbuf[lwc1], specs, 1);
 			}
 			printf("Came out in second one with src=%d and arg=%d and uid=%d when sbuf[2]=%d\n", src, (int) src_arg, getuid(), sbuf[2]);
 			new_lwc = lwcdiscardswitch(sbuf[lwc1], NULL, 0);
