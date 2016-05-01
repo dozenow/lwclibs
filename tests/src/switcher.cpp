@@ -19,6 +19,8 @@ using namespace std;
 #define IDX_ORIG 0
 #define IDX_CHLD 1
 
+#define TEST_CAP 0
+
 
 struct timespec diff(struct timespec *start, struct timespec *end)
 {
@@ -44,7 +46,8 @@ void child_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
 		int src = -1;
 		stack_buf[1] = private_buf[1] = (private_buf[1]+1);
 		int ns = Lwcsuspendswitch(shared_buf[IDX_ORIG], NULL, 0, NULL, NULL, NULL);
-		if (0) {
+#ifdef TEST_CAP
+		if (1) {
 			cerr << "In child with ns=" << ns << " and src=" << src << " with stack_buf and private buf = " << (int)stack_buf[1] << ' ' << (int)private_buf[1] << endl;
 			cerr << "Child UID is " << getuid() << " and capped: " << (bool) cap_sandboxed() << endl;
 			sleep(1);
@@ -56,7 +59,7 @@ void child_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
 				unlink("/tmp/foobar");
 			}
 		}
-
+#endif
 
 	}
 
@@ -71,7 +74,8 @@ void parent_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
 	for(;;) {
 		int src = -1;
 		int ns = Lwcsuspendswitch(shared_buf[IDX_CHLD], NULL, 0, NULL, NULL, NULL);
-		if (0) {
+#ifdef TEST_CAP
+		if (1) {
 			cerr << "In parent with ns=" << ns << " and src=" << src << " with stack_buf and private buf = " << (int)stack_buf[1] << ' ' << (int) private_buf[1] << endl;
 			cerr << "Parent UID is " << getuid() << " and capped: " << (bool) cap_sandboxed() << endl;
 			sleep(1);
@@ -84,7 +88,7 @@ void parent_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
 				unlink("/tmp/foobar");
 			}
 		}
-
+#endif
 	}
 }
 
@@ -136,6 +140,9 @@ int main(int argc, char *argv[]) {
 			if (cur >= 0) {
 				shared_buf[IDX_CHLD] = cur;
 			} else {
+#ifdef TEST_CAP
+				cap_enter();
+#ENDIF
 				child_work_function(stack_buf, shared_buf, private_buf);
 			}
 		}
