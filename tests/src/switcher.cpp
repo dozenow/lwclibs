@@ -142,7 +142,7 @@ int main(int argc, char *argv[]) {
 			} else {
 #ifdef TEST_CAP
 				cap_enter();
-#ENDIF
+#endif
 				child_work_function(stack_buf, shared_buf, private_buf);
 			}
 		}
