@@ -5,6 +5,11 @@ use warnings;
 
 use Data::Dumper;
 
+BEGIN {
+	$ENV{IPCRUN3PROFILE} = 2;
+}
+
+
 use Cwd qw(abs_path chdir getcwd);
 use autodie qw(:all);
 use Getopt::Long;
@@ -57,7 +62,9 @@ chomp($ident);
 $cmd =~ s{^~/}{$ENV{HOME}/}g;
 $cmd = abs_path($cmd);
 die "Command not found\n" unless $cmd;
-chdir($dir);
+chdir($dir) or die "Could not change directory: $?\n";
+
+
 
 my $cmd_dir = dirname($cmd);
 my $commit_line = `git -C $cmd_dir log --format='%h %ci %s %ai' -1 2>/dev/null`;
@@ -75,16 +82,16 @@ if ($save_results) {
 	printf("Saving results in %s\n", $dir);
 	my $bname = basename($cmd);
 	my $date = strftime('%Y%m%dZ%H%M%S', gmtime());
-	my $out_file = "$dir/$date.$bname.out";
-	my $err_file = "$dir/$date.$bname.err";
+	my $out_file = "$date.$bname.out";
+	my $err_file = "$date.$bname.err";
 	die "Output file $out_file already exists" if (-f $out_file);
 	die "Error file $err_file already exists" if (-f $err_file);
 	if (!$verbose) {
-		open($out_fh, '>', $out_file);
-		open($err_fh, '>', $err_file);
+		open($out_fh, '>', $out_file) or die "Could not open output file: $!";
+		open($err_fh, '>', $err_file) or die "Could not open output file: $!";;
 	} else {
-		tee STDOUT, '>', $out_file;
-		tee STDERR, '>', $err_file;
+		tee STDOUT, '>', $out_file or die "Could not open output file: $!";
+		tee STDERR, '>', $err_file or die "Could not open output file: $!";;
 	}
 }
 
@@ -97,6 +104,11 @@ printf($out_fh "CMD COMMIT: %s", $commit_line ? $commit_line : "Command not unde
 printf($out_fh "KERNEL: %s", `uname -a`);
 
 my @c = ($cmd, split/ /,$opts);
-run3(\@c, undef, $out_fh, $err_fh);
-
-printf($out_fh "Finished test at %s\n", strftime('%F %T %Z (%s)', localtime()));
+eval {
+	run3(\@c, undef, $out_fh, $err_fh);
+};
+if ($@) {
+	printf($out_fh "Could not run test at %s : %s\n", strftime('%F %T %Z (%s)', localtime()), $@);
+} else {
+	printf($out_fh "Finished test at %s\n", strftime('%F %T %Z (%s)', localtime()));
+}
