@@ -2,20 +2,23 @@ include ../Makefile.inc
 
 VPATH=.:src:include
 DEPFILE = .depends
-TARGETS=switcher switcher_pthread
+TARGETS=switcher switcher_pthread switcher_pth
 
 STATICLWC=../libs/liblwc.a
-LIBDIRS = -L../libs/
+LIBDIRS = -L../libs/ 
 LIBS = $(STATICLWC)
-
+CXXFLAGS += -I/usr/local/include
 
 build-all : $(LIBS) $(TARGETS)
 
 $(LIBS) : ../libs/src/*.c ../libs/src/*.S
 	$(MAKE) -C ../libs
 
-switcher_pthread : src/switcher_pthread.o src/bench.o $(LIBS)
-	$(CXX) $(CXXFLAGS) src/switcher_pthread.o src/bench.o $(LIBDIRS) $(LIBS) -lpthread -o $@
+switcher_pthread : src/switcher_pthread.o src/bench.o
+	$(CXX) $(CXXFLAGS) src/switcher_pthread.o src/bench.o $(LIBDIRS)-lpthread -o $@
+
+switcher_pth : src/switcher_pth.o src/bench.o
+	$(CXX) $(CXXFLAGS) src/switcher_pth.o src/bench.o -L/usr/local/lib/pth $(LIBDIRS) -o $@ -lpth
 
 switcher : src/switcher.o src/bench.o $(LIBS)
 	$(CXX) $(CXXFLAGS) src/switcher.o src/bench.o $(LIBDIRS) $(LIBS) -o $@

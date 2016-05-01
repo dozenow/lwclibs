@@ -1,0 +1,5 @@
+Beginning test of /usr/home/litton/snap/benchmarking/switcher at 2016-05-01 14:05:35 CEST (1462104335)
+CMD: /usr/home/litton/snap/benchmarking/switcher 
+CMD COMMIT: 1fb9ee8 2016-05-01 14:04:44 +0200 moved benchmarking "tests" to benchmarking folder 2016-05-01 14:04:44 +0200
+KERNEL: FreeBSD thor23bsd 10.2-RELEASE FreeBSD 10.2-RELEASE #2 dc479c9(snap/master): Sun May  1 12:48:25 CEST 2016     litton@thor23bsd:/usr/obj/usr/home/litton/kernel/sys/SNAP_EVAL  amd64
+Finished test at 2016-05-01 14:05:37 CEST (1462104337)

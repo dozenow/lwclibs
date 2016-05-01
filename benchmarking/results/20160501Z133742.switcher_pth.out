@@ -1,0 +1,5 @@
+Beginning test of /usr/home/litton/snap/benchmarking/switcher_pth at 2016-05-01 15:37:42 CEST (1462109862)
+CMD: /usr/home/litton/snap/benchmarking/switcher_pth 
+CMD COMMIT: 226153c 2016-05-01 14:24:44 +0200 handle error cases a little better 2016-05-01 14:24:44 +0200
+KERNEL: FreeBSD thor23bsd 10.2-RELEASE FreeBSD 10.2-RELEASE #2 dc479c9(snap/master): Sun May  1 12:48:25 CEST 2016     litton@thor23bsd:/usr/obj/usr/home/litton/kernel/sys/SNAP_EVAL  amd64
+Finished test at 2016-05-01 15:38:07 CEST (1462109887)
