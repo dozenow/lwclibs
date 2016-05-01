@@ -10,9 +10,8 @@
 
 #include <pthread.h>
 
-#include "netwrap.hpp"
 #include "lwc.h"
-
+#include "bench.h"
 
 pthread_t child_thr;
 pthread_cond_t cond;
@@ -27,20 +26,7 @@ using std::cerr;
 using std::endl;
 
 
-
-struct timespec diff(struct timespec *start, struct timespec *end)
-{
-	struct timespec temp;
-	if ((end->tv_nsec-start->tv_nsec)<0) {
-		temp.tv_sec = end->tv_sec-start->tv_sec-1;
-		temp.tv_nsec = 1000000000+end->tv_nsec-start->tv_nsec;
-	} else {
-		temp.tv_sec = end->tv_sec-start->tv_sec;
-		temp.tv_nsec = end->tv_nsec-start->tv_nsec;
-	}
-	return temp;
-}
-
+#define COUNT 1000000
 
 void* child_work_function(void *arg) {
 	
@@ -50,7 +36,7 @@ void* child_work_function(void *arg) {
 
 	clock_gettime(CLOCK_REALTIME, &start);
 
-	while(buf[1] < 10000) {
+	while(buf[1] < COUNT) {
 		pthread_mutex_lock(&mutex);
 		buf[1] = (buf[1]+1);
 		//cerr << "do child\n";
@@ -61,7 +47,7 @@ void* child_work_function(void *arg) {
 
 	clock_gettime(CLOCK_REALTIME, &end);
 	struct timespec res = diff(&start, &end);
-	cerr << "Total time for 10 k switches is  " << res.tv_sec << " seconds " << res.tv_nsec << " nanoseconds" << endl;
+	cerr << "Total time for " << COUNT << " switches is  " << res.tv_sec << " seconds " << res.tv_nsec << " nanoseconds" << endl;
 	exit(0);
 	return NULL;
 }

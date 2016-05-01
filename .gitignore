@@ -12,3 +12,5 @@ switcher_pthread
 *.lo
 *.slo
 nonshared
+*.la
+.libs

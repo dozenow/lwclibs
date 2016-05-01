@@ -1,0 +1,33 @@
+include ../Makefile.inc
+
+VPATH=.:src:include
+DEPFILE = .depends
+TARGETS=switcher switcher_pthread
+
+STATICLWC=../libs/liblwc.a
+LIBDIRS = -L../libs/
+LIBS = $(STATICLWC)
+
+
+build-all : $(LIBS) $(TARGETS)
+
+$(LIBS) : ../libs/src/*.c ../libs/src/*.S
+	$(MAKE) -C ../libs
+
+switcher_pthread : src/switcher_pthread.o src/bench.o $(LIBS)
+	$(CXX) $(CXXFLAGS) src/switcher_pthread.o src/bench.o $(LIBDIRS) $(LIBS) -lpthread -o $@
+
+switcher : src/switcher.o src/bench.o $(LIBS)
+	$(CXX) $(CXXFLAGS) src/switcher.o src/bench.o $(LIBDIRS) $(LIBS) -o $@
+
+clean:
+	rm -f src/*.o **/*~ $(TARGETS) *.core
+
+depend:
+	truncate -s 0 $(DEPFILE)
+	makedepend -Y -f $(DEPFILE) -- -Iinclude -I../libs/include -- src/*.c src/*.cpp
+
+
+.PHONY: depend build-all
+
+sinclude $(DEPFILE)

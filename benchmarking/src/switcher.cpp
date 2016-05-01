@@ -11,8 +11,8 @@
 
 #include <iostream>
 
-#include "netwrap.hpp"
 #include "lwc.h"
+#include "bench.h"
 
 using namespace std;
 
@@ -21,20 +21,7 @@ using namespace std;
 
 #define TEST_CAP 0
 
-
-struct timespec diff(struct timespec *start, struct timespec *end)
-{
-	struct timespec temp;
-	if ((end->tv_nsec-start->tv_nsec)<0) {
-		temp.tv_sec = end->tv_sec-start->tv_sec-1;
-		temp.tv_nsec = 1000000000+end->tv_nsec-start->tv_nsec;
-	} else {
-		temp.tv_sec = end->tv_sec-start->tv_sec;
-		temp.tv_nsec = end->tv_nsec-start->tv_nsec;
-	}
-	return temp;
-}
-
+#define COUNT 1000000
 
 void child_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
 	
@@ -42,11 +29,11 @@ void child_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
 
 	clock_gettime(CLOCK_REALTIME, &start);
 
-	while(private_buf[1] < 10000) {
+	while(private_buf[1] < COUNT) {
 		int src = -1;
 		stack_buf[1] = private_buf[1] = (private_buf[1]+1);
 		int ns = Lwcsuspendswitch(shared_buf[IDX_ORIG], NULL, 0, NULL, NULL, NULL);
-#ifdef TEST_CAP
+#if(TEST_CAP)
 		if (1) {
 			cerr << "In child with ns=" << ns << " and src=" << src << " with stack_buf and private buf = " << (int)stack_buf[1] << ' ' << (int)private_buf[1] << endl;
 			cerr << "Child UID is " << getuid() << " and capped: " << (bool) cap_sandboxed() << endl;
@@ -65,7 +52,7 @@ void child_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
 
 	clock_gettime(CLOCK_REALTIME, &end);
 	struct timespec res = diff(&start, &end);
-	cerr << "Total time for 10 k switches is  " << res.tv_sec << " seconds " << res.tv_nsec << " nanoseconds" << endl;
+	cerr << "Total time for " << COUNT << " switches is  " << res.tv_sec << " seconds " << res.tv_nsec << " nanoseconds" << endl;
 	exit(0);
 }
 
@@ -74,7 +61,7 @@ void parent_work_function(char * stack_buf, int *shared_buf, int *private_buf) {
 	for(;;) {
 		int src = -1;
 		int ns = Lwcsuspendswitch(shared_buf[IDX_CHLD], NULL, 0, NULL, NULL, NULL);
-#ifdef TEST_CAP
+#if(TEST_CAP)
 		if (1) {
 			cerr << "In parent with ns=" << ns << " and src=" << src << " with stack_buf and private buf = " << (int)stack_buf[1] << ' ' << (int) private_buf[1] << endl;
 			cerr << "Parent UID is " << getuid() << " and capped: " << (bool) cap_sandboxed() << endl;
