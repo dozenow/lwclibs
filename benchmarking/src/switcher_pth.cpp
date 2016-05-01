@@ -24,13 +24,9 @@ pth_t chld = NULL;
 pth_mutex_t mutex;
 pth_cond_t cond;
 
-FILE *fp;
-
 #define COUNT 1000000
 
 void* child_work_function(void *arg) {
-	fprintf(fp, "in child wf:\n");
-	pth_ctrl(PTH_CTRL_DUMPSTATE, fp);
 	
 	struct timespec start, end;
 
@@ -56,8 +52,6 @@ void* child_work_function(void *arg) {
 
 
 void parent_work_function() {
-	fprintf(fp, "in parent wf:\n");
-	pth_ctrl(PTH_CTRL_DUMPSTATE, fp);
 
 	for(;;) {
 		pth_mutex_acquire(&mutex, 0, NULL);
@@ -101,16 +95,7 @@ int main(int argc, char *argv[]) {
 	pth_cond_init(&cond);
 
 
-	fp = fopen("/tmp/pth.txt", "w+");
-	if (!fp) {
-		perror("i suck ");
-		return EXIT_FAILURE;
-	}
-	fprintf(fp, "pre spawn:\n");
-	pth_ctrl(PTH_CTRL_DUMPSTATE, fp);
 	pth_t thr = pth_spawn(PTH_ATTR_DEFAULT, child_work_function, private_buf);
-	fprintf(fp, "post spawn:\n");
-	pth_ctrl(PTH_CTRL_DUMPSTATE, fp);
 	
 
 	if (!thr) {
@@ -121,7 +106,6 @@ int main(int argc, char *argv[]) {
 
 	orig = pth_self();
 	chld = thr;
-	fprintf(fp, "orig=0x%lx and chld=0x%lx\n", orig, chld);
 
 	for(;;) {
 		parent_work_function();
