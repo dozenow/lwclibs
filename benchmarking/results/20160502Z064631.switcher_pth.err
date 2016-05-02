@@ -1,0 +1,13 @@
+Total time for 1000000 switches is  25 seconds 602770788 nanoseconds
+
+IPC::Run3 child: /usr/home/litton/snap/benchmarking/switcher_pth
+IPC::Run3 run3()  :  25.606398 secs
+IPC::Run3 child   :  25.606038 secs
+IPC::Run3 overhead:   0.000360 secs (  0%)
+
+IPC::Run3 total elapsed:              25.621165 secs
+IPC::Run3 calls to run3():             1
+IPC::Run3 total spent in run3():      25.606398 secs (100%),  25.606398 per call
+IPC::Run3 total spent not in run3():   0.014767 secs (  0%)
+IPC::Run3 total spent in children:    25.606038 secs (100%),  25.606038 per call
+IPC::Run3 total overhead:              0.000360 secs (  0%),   0.000360 per call

@@ -1,0 +1,13 @@
+Total time for 1000000 switches is  8 seconds 860047903 nanoseconds
+
+IPC::Run3 child: /usr/home/litton/snap/benchmarking/switcher_pthread
+IPC::Run3 run3()  :   8.864285 secs
+IPC::Run3 child   :   8.863843 secs
+IPC::Run3 overhead:   0.000442 secs (  0%)
+
+IPC::Run3 total elapsed:               8.885229 secs
+IPC::Run3 calls to run3():             1
+IPC::Run3 total spent in run3():       8.864285 secs (100%),   8.864285 per call
+IPC::Run3 total spent not in run3():   0.020944 secs (  0%)
+IPC::Run3 total spent in children:     8.863843 secs (100%),   8.863843 per call
+IPC::Run3 total overhead:              0.000442 secs (  0%),   0.000442 per call

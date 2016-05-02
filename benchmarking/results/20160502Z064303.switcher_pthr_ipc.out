@@ -1,0 +1,5 @@
+Beginning test of /usr/home/litton/snap/benchmarking/switcher_pthr_ipc at 2016-05-02 08:43:03 CEST (1462171383)
+CMD: /usr/home/litton/snap/benchmarking/switcher_pthr_ipc 
+CMD COMMIT: 4c093ac 2016-05-01 20:44:21 +0200 some micro 2016-05-01 20:44:21 +0200
+KERNEL: FreeBSD thor23bsd 10.2-RELEASE FreeBSD 10.2-RELEASE #2 dc479c9(snap/master): Sun May  1 12:48:25 CEST 2016     litton@thor23bsd:/usr/obj/usr/home/litton/kernel/sys/SNAP_EVAL  amd64
+Finished test at 2016-05-02 08:43:10 CEST (1462171390)
