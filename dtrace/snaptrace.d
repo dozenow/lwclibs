@@ -42,11 +42,16 @@ lwc:kern_lwc:discardswitch:syslwc {
 }
 
 lwc:kern_lwc:alloc:syslwc {
-	printf("allocated lwc 0x%lx", arg0);
+	printf("allocated lwc 0x%lx, pid=%d", arg0, pid);
 }
 
 lwc:kern_lwc:createdproto:syslwc {
 	printf("createproto 0x%lx", arg0);
+}
+
+lwc:kern_lwc:overlay:syslwc {
+	/* you can deref and chase these guys */
+	printf("createproto snap 0x%lx requested 0x%lx permitted 0x%lx", arg0, arg1, arg2);
 }
 
 lwc:kern_lwc:copy:syslwc {
