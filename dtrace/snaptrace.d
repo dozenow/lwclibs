@@ -1,5 +1,5 @@
 syscall:freebsd:lwccreate:entry {
-	star4 = arg4 ? (int) copyin(arg4, 4) : -1;
+	star4 = arg4 ? (long) copyin(arg4, 8) : -1;
 	printf("lwccreate(0x%lx, %d, 0x%lx, 0x%lx, 0x%lx(%d), 0x%x)", arg0, arg1, arg2, arg3, arg4, star4, arg5);
 }
 
@@ -14,6 +14,10 @@ syscall:freebsd:lwcsuspendswitch:entry {
 
 syscall:freebsd:lwcdiscardswitch:entry {
 	printf("lwcdiscardswitch(%d, 0x%lx, %d)", arg0, arg1, arg2);
+}
+
+syscall::exit:entry {
+	printf("pid %d exiting)", pid);
 }
 
 syscall::lwcoverlay:entry {
@@ -58,7 +62,17 @@ lwc:kern_lwc:copy:syslwc {
 	printf("copied lwc 0x%lx", arg0);
 }
 
-lwc:kern_lwc:free:snrelease {
+lwc:kern_lwc:hold:syslwc {
+	printf("holding lwc 0x%lx from %d pid=%d", arg0, args[0]->se_refcnt, pid);
+}
+
+
+lwc:kern_lwc:decrement:syslwc {
+	printf("decrementing lwc 0x%lx from %d pid=%d", arg0, args[0]->se_refcnt, pid);
+}
+
+
+lwc:kern_lwc:free:syslwc {
 	printf("freeing lwc 0x%lx", arg0);
 }
 
