@@ -110,7 +110,7 @@ int main(int argc, char *argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	semun init;
+	union semun init;
 	init.val = 0;
 	semctl(sem_id, 0, SETVAL, init);
 

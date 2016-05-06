@@ -39,6 +39,10 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
+extern int php_hash_environment(void);
+
+
+
 /* If you declare any globals in php_snap.h uncomment this:
 ZEND_DECLARE_MODULE_GLOBALS(snap)
 */
@@ -102,14 +106,27 @@ PHP_FUNCTION(snapcache)
 	int retval = 42;
 	if (time(NULL) < expiration) {
 		/* share the file table */
-		struct lwc_resource_specifier specs[1];
+		struct lwc_resource_specifier specs[2];
 		specs[0].flags = LWC_RESOURCE_FILES | LWC_RESOURCE_SHARE;
 		specs[0].sub.descriptors.from = specs[0].sub.descriptors.to = -1;
-		int rv = lwccreate(specs, 1, NULL, NULL, NULL, 0);
+
+		size_t env = (size_t) environ;
+		php_printf("rounded as 0x%lx\n", env & ~(4095));
+		for(char ** cur = environ; *cur; cur++) {
+			php_printf("0x%lx 0x%lx\n", (unsigned long) cur, ((unsigned long) cur) & ~(4095));
+		}
+		specs[1].flags = LWC_RESOURCE_MEMORY | LWC_RESOURCE_SHARE;
+		specs[1].sub.memory.start = env & ~(4095);
+		specs[1].sub.memory.end = (env & ~(4095)) + 4096;
+
+		int rv = lwccreate(specs, 2, NULL, NULL, NULL, 0);
 		snprintf(buf, sizeof(buf), "snap rv = %d\n", rv);
 		write(snap_fd, buf, strlen(buf));
 		php_printf("%s", buf);
 		if (rv == LWC_SWITCHED) {
+			SG(redo)();
+			php_hash_environment();
+			php_printf("qs=%s\n", SG(request_info).query_string);
 			retval = 0;
 		} else if (rv == LWC_FAILED) {
 			retval = -1;
@@ -187,7 +204,6 @@ static void sfd_free(void *src, struct sh_memory_pool *mp) {
 	return;
 }
 
-
 #define MEMPOOL_MMAP_SIZE (4096*100)
 
 /* {{{ PHP_MINIT_FUNCTION
@@ -219,6 +235,16 @@ PHP_MINIT_FUNCTION(snap)
 		php_error(E_ERROR, "Failed to init snap_hash\n");
 	}
 
+	/* create initial snap for filetable sharing access */
+	struct lwc_resource_specifier specs[1];
+	specs[0].flags = LWC_RESOURCE_FILES | LWC_RESOURCE_SHARE;
+	specs[0].sub.descriptors.from = specs[0].sub.descriptors.to = -1;
+	int rv = lwccreate(specs, 1, NULL, NULL, NULL, 0);
+	if (rv < 0) {
+		php_error(E_ERROR, "I can't init a snap\n");
+		return FAILURE;
+	}
+
 	char buf[] = "opened snap_fd and initialized HT\n";
 	write(snap_fd, buf, strlen(buf));
 	return SUCCESS;
@@ -232,10 +258,12 @@ PHP_MSHUTDOWN_FUNCTION(snap)
 	/* uncomment this line if you have INI entries
 	UNREGISTER_INI_ENTRIES();
 	*/
+
 	close(snap_fd);
 	sh_ht_destroy(&snap_hash);
 	snap_mp = NULL;
 	munmap(snap_mempool_addr, MEMPOOL_MMAP_SIZE);
+
 
 	return SUCCESS;
 }
@@ -264,7 +292,7 @@ PHP_RINIT_FUNCTION(snap)
 		int fd;
 		size_t fdsize;
 		sh_ht_value(it, (void*) &fd, &fdsize);
-		snprintf(buf, sizeof(buf), "present in HT, val is %d. Trying to snap\n", fd);
+		snprintf(buf, sizeof(buf), "present in HT, val is %d. Trying to switch\n", fd);
 		write(snap_fd, buf, strlen(buf));
 		free_ht_iterator(it);
 		int ret = lwcdiscardswitch(fd, NULL, 0);

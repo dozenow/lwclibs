@@ -58,6 +58,8 @@ int main() {
 		return EXIT_FAILURE;
 	}
 
+	lwccreate(NULL, 0, NULL, NULL, 0, 0);
+	lwccreate(NULL, 0, NULL, NULL, 0, 0);
 
 	sbuf[0] = lwccreate(NULL, 0, NULL, NULL, 0, 0);
 	if (sbuf[0] == LWC_SWITCHED) {
@@ -160,6 +162,12 @@ int main() {
 	}  else {
 
 		clock_gettime(CLOCK_REALTIME, &end);
+
+		pid = fork();
+
+		if (pid == 0)
+			return 0;
+		
 
 		struct timespec res = diff(&start, &end);
 		

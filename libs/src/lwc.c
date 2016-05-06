@@ -4,7 +4,7 @@
 
 #include "lwc.h"
 
-int Lwccreate(struct lwc_resource_specifier *resources, int numr, int *src, void *src_args, int *num_args, int flags) {
+int Lwccreate(struct lwc_resource_specifier *resources, int numr, int *src, register_t *src_args, int *num_args, int flags) {
 	int rv = lwccreate(resources, numr, src, src_args, num_args, flags);
 	if (rv == LWC_FAILED) {
 		fprintf(stderr, "lwccreate got error %d: %s\n", errno, strerror(errno));
@@ -17,7 +17,7 @@ int Lwccreate(struct lwc_resource_specifier *resources, int numr, int *src, void
 	return rv;
 }
 
-int Lwcsuspendswitch(int to, void *to_args, int num_toargs, int *src, void *src_args, int *num_args) {
+int Lwcsuspendswitch(int to, register_t *to_args, int num_toargs, int *src, register_t *src_args, int *num_args) {
 	int rv = lwcsuspendswitch(to, to_args, num_toargs, src, src_args, num_args);
 	if (rv == LWC_FAILED) {
 		fprintf(stderr, "lwcsuspend got error %d: %s\n", errno, strerror(errno));
@@ -30,7 +30,7 @@ int Lwcsuspendswitch(int to, void *to_args, int num_toargs, int *src, void *src_
 	return rv;
 }
 
-int Lwcdiscardswitch(int to, void *to_arg, int num_toargs) {
+int Lwcdiscardswitch(int to, register_t *to_arg, int num_toargs) {
 	int rv = lwcdiscardswitch(to, to_arg, num_toargs);
 	if (rv == LWC_FAILED) {
 		fprintf(stderr, "lwcsuspend got error %d: %s\n", errno, strerror(errno));

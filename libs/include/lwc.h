@@ -14,17 +14,19 @@ struct lwc_resource_specifier;
 /*
  * system calls.
  */
+
+typedef int64_t register_t;
 	
 //extern int lwcdiscardswitch(int to, void *to_arg, int num_toargs);
-extern int lwcsuspendswitch(int to, void *to_args, int num_toargs, int *src, void *src_args, int *num_args);
-extern int lwcdiscardswitch(int to, void *to_arg, int num_toargs);
+extern int lwcsuspendswitch(int to, register_t *to_args, int num_toargs, int *src, register_t *src_args, int *num_args);
+extern int lwcdiscardswitch(int to, register_t *to_arg, int num_toargs);
 extern int lwccreate(struct lwc_resource_specifier *resources, int numr, int *src, void *src_arg, int *num_args, int flags);
 extern int lwcoverlay(int from, struct lwc_resource_specifier *resources, int numr);
 extern int lwcrestrict(int lwc, struct lwc_resource_specifier *resources, int numr);
 
-extern int Lwccreate(struct lwc_resource_specifier *resources, int numr, int *src, void *src_arg, int *num_args, int flags);
-extern int Lwcdiscardswitch(int to, void *to_arg, int num_toargs);
-extern int Lwcsuspendswitch(int to, void *to_args, int num_toargs, int *src, void *src_args, int *num_args);
+extern int Lwccreate(struct lwc_resource_specifier *resources, int numr, int *src, register_t *src_arg, int *num_args, int flags);
+extern int Lwcdiscardswitch(int to, register_t *to_arg, int num_toargs);
+extern int Lwcsuspendswitch(int to, register_t *to_args, int num_toargs, int *src, register_t *src_args, int *num_args);
 
 
 
@@ -53,6 +55,7 @@ struct lwc_resource_specifier {
 
 /* user visible flags, note, should be disjoint from RETCREATE, etc */
 #define LWC_SUSPEND_ONLY	0x0008
+#define LWC_SYSTRAP			0x0040
 
 #define LWC_FAILED (-1)
 #define LWC_SWITCHED (-2)
