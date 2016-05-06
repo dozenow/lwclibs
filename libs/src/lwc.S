@@ -104,3 +104,17 @@ out_res:
    pop    %rbp
    retq
 
+
+.globl lwcsyscall
+lwcsyscall: 
+   push   %rbp
+   mov    %rsp,%rbp
+   /* uses all six registers */
+   mov    $551,%eax
+   mov    %rcx,%r10
+   syscall
+   jnc out_lwsy
+   DO_ERR
+out_lwsy:  
+   pop    %rbp
+   retq
