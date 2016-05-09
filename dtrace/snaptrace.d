@@ -16,10 +16,6 @@ syscall:freebsd:lwcdiscardswitch:entry {
 	printf("lwcdiscardswitch(%d, 0x%lx, %d)", arg0, arg1, arg2);
 }
 
-syscall::exit:entry {
-	printf("pid %d exiting)", pid);
-}
-
 syscall::lwcoverlay:entry {
 	printf("lwcoverlay(%d, 0x%lx, %d)", arg0, arg1, arg2);
 }
@@ -62,46 +58,49 @@ lwc:kern_lwc:copy:syslwc {
 	printf("copied lwc 0x%lx", arg0);
 }
 
-lwc:kern_lwc:hold:syslwc {
-	printf("holding lwc 0x%lx from %d pid=%d", arg0, args[0]->se_refcnt, pid);
+/* lwc:kern_lwc:hold:syslwc { */
+/* 	printf("holding lwc 0x%lx from %d pid=%d", arg0, args[0]->se_refcnt, pid); */
+/* } */
+
+
+/* lwc:kern_lwc:decrement:syslwc { */
+/* 	printf("decrementing lwc 0x%lx from %d pid=%d", arg0, args[0]->se_refcnt, pid); */
+/* } */
+
+lwc:kern_lwc:close:syslwc {
+	printf("Closing lwc 0x%lx with refcnt %d pid=%d", arg0, args[0]->se_refcnt, pid);
 }
-
-
-lwc:kern_lwc:decrement:syslwc {
-	printf("decrementing lwc 0x%lx from %d pid=%d", arg0, args[0]->se_refcnt, pid);
-}
-
 
 lwc:kern_lwc:free:syslwc {
 	printf("freeing lwc 0x%lx", arg0);
 }
 
-lwc:kern_lwc:forkcpu:syslwc {
-	printf("current cpu status copied into into lwc 0x%lx", arg0);
-}
+/* lwc:kern_lwc:forkcpu:syslwc { */
+/* 	printf("current cpu status copied into into lwc 0x%lx", arg0); */
+/* } */
 
-lwc:kern_lwc:forkvm:syslwc {
-	printf("current vm forked into lwc 0x%lx", arg0);
-}
+/* lwc:kern_lwc:forkvm:syslwc { */
+/* 	printf("current vm forked into lwc 0x%lx", arg0); */
+/* } */
 
-lwc:kern_lwc:sharevm:syslwc {
-	printf("current shared forked into lwc 0x%lx", arg0);
-}
+/* lwc:kern_lwc:sharevm:syslwc { */
+/* 	printf("current shared forked into lwc 0x%lx", arg0); */
+/* } */
 
-lwc:kern_lwc:forkfd:syslwc {
-	printf("current fd forked into lwc 0x%lx", arg0);
-}
+/* lwc:kern_lwc:forkfd:syslwc { */
+/* 	printf("current fd forked into lwc 0x%lx", arg0); */
+/* } */
 
-lwc:kern_lwc:sharefd:syslwc {
-	/* print(*args[0]); show all of the struct, */
-	printf("current fd shared with lwc 0x%lx", arg0);
-}
+/* lwc:kern_lwc:sharefd:syslwc { */
+/* 	/\* print(*args[0]); show all of the struct, *\/ */
+/* 	printf("current fd shared with lwc 0x%lx", arg0); */
+/* } */
 
-lwc:kern_lwc:forkcred:syslwc {
-	printf("current cred forked into lwc 0x%lx", arg0);
-}
+/* lwc:kern_lwc:forkcred:syslwc { */
+/* 	printf("current cred forked into lwc 0x%lx", arg0); */
+/* } */
 
-lwc:kern_lwc:sharecred:syslwc {
-	/* print(*args[0]); show all of the struct, */
-	printf("current cred shared with lwc 0x%lx", arg0);
-}
+/* lwc:kern_lwc:sharecred:syslwc { */
+/* 	/\* print(*args[0]); show all of the struct, *\/ */
+/* 	printf("current cred shared with lwc 0x%lx", arg0); */
+/* } */

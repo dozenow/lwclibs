@@ -118,3 +118,32 @@ lwcsyscall:
 out_lwsy:  
    pop    %rbp
    retq
+
+   
+.globl lwcclose
+lwcclose: 
+   push   %rbp
+   mov    %rsp,%rbp
+   /* one argument */
+   mov    $552,%eax
+   mov    %rcx,%r10
+   syscall
+   jnc out_lwsc
+   DO_ERR
+out_lwsc:
+   pop    %rbp
+   retq
+
+.globl lwcgetlwc
+lwcgetlwc: 
+   push   %rbp
+   mov    %rsp,%rbp
+   /* one argument */
+   mov    $553,%eax
+   mov    %rcx,%r10
+   syscall
+   jnc out_lwget
+   DO_ERR
+out_lwget:  
+   pop    %rbp
+   retq
