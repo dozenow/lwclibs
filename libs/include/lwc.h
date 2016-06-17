@@ -58,7 +58,7 @@ struct lwc_resource_specifier {
 
 /* user visible flags, note, should be disjoint from RETCREATE, etc */
 #define LWC_SUSPEND_ONLY	0x0008
-#define LWC_SYSTRAP			0x0040
+#define LWC_TRAP_SYSCALL	0x0080
 
 #define LWC_FAILED (-1)
 #define LWC_SWITCHED (-2)

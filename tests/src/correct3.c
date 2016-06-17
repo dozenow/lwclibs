@@ -57,22 +57,29 @@ int main() {
 
 	/* share every other page */
 
+
 	sbuf[2] = 0;
 	sbuf[3] = 0;
 	register_t src_arg[10] = {24};;
 	int num_args = 1;
 	printf("num args is at 0x%lx and src arg is at 0x%lx\n", (unsigned long) &num_args,
 	       (unsigned long) src_arg);
+
+	for(int i = 0; i < 100; ++i) {
+		lwcclose(lwccreate(specs, 6, &src, src_arg, &num_args, 0));
+	}
+
 	int new_lwc = lwccreate(specs, 6, &src, src_arg, &num_args, 0);
 	if (new_lwc == LWC_SWITCHED) {
-		int fd = lwcsyscall(src, LWCR_CREDENT, SYS_open, "/tmp/FOO", O_CREAT, 0);
-		printf("Came out in first one with src=%d and arg=%d with %d args\n", src, src_arg[0], num_args);
+		int fd = lwcsyscall(src, LWCR_CREDENT, SYS_open, (register_t) "/tmp/FOO", O_CREAT, 0);
+		close(fd);
+		printf("Came out in first one with src=%d and arg=%ld with %d args\n", src, src_arg[0], num_args);
 	}
 	if (new_lwc >= 0) {
 		sbuf[lwc1] = src = new_lwc;
 		new_lwc = lwccreate(specs, 6, &src, src_arg, &num_args, 0);
 		if (new_lwc == LWC_SWITCHED)
-			printf("Came out in second one with src=%d and arg=%d with %d args\n", src, src_arg[0], num_args);
+			printf("Came out in second one with src=%d and arg=%ld with %d args\n", src, src_arg[0], num_args);
 		if (new_lwc >= 0) {
 			sbuf[lwc2] = new_lwc;
 		}

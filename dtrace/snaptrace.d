@@ -58,6 +58,23 @@ lwc:kern_lwc:copy:syslwc {
 	printf("copied lwc 0x%lx", arg0);
 }
 
+/* lwc:kern_lwc:spec_alloc:syslwc { */
+/* 	printf("allocated spec 0x%lx, pid=%d", arg0, pid); */
+/* } */
+
+/* lwc:kern_lwc:spec_hold:syslwc { */
+/* 	printf("holding spec 0x%lx from %d pid=%d", arg0, args[0]->spec_refcnt, pid); */
+/* } */
+
+/* lwc:kern_lwc:spec_decrement:syslwc { */
+/* 	printf("decrementing spec 0x%lx from %d pid=%d", arg0, args[0]->spec_refcnt, pid); */
+/* } */
+
+/* lwc:kern_lwc:spec_free:syslwc { */
+/* 	printf("freeing spec 0x%lx", arg0); */
+/* } */
+
+
 /* lwc:kern_lwc:hold:syslwc { */
 /* 	printf("holding lwc 0x%lx from %d pid=%d", arg0, args[0]->se_refcnt, pid); */
 /* } */

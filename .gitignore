@@ -14,3 +14,12 @@ switcher_pthread
 nonshared
 *.la
 .libs
+*.o
+liblwc.so
+correct2
+correct3
+overlay_cred
+overlay_file
+overlay_mem
+syscall
+trap
