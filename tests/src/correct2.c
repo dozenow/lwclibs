@@ -44,7 +44,7 @@ int main() {
 	if (new_lwc >= 0) { // created a lwc
 		mbuf[0] = 1;
 		sbuf[0] = new_lwc;
-		void * arg[10] = {(void*) 42, NULL };
+		register_t arg[10] = {42 };
 		int x = lwcdiscardswitch(sbuf[0], arg, 1);
 		printf("Should not see this. new snap is %d, x is %d\n", new_lwc, x);
 		return EXIT_FAILURE;
@@ -54,7 +54,7 @@ int main() {
 			fprintf(stderr, "mbuf[10](%d) != stackbuf[10](%d)\n", mbuf[10], stackbuf[10]);
 			if (sbuf[1] != 100) {
 				sbuf[1] = 100;
-				void * arg[10] = {(void*) 43, NULL };
+				register_t arg[10] = {43 };
 				printf("Sending 0x%lx (%d)\n", (unsigned long)arg, (int) arg[0]);
 				lwcdiscardswitch(sbuf[0], arg, 1);
 			}
@@ -73,7 +73,7 @@ int main() {
 		memset(stackbuf, mbuf[0], 4096);
 
 		if (sbuf[2] < 10) {
-			void * arg[10] = {(void*) 44, NULL };
+			register_t arg[10] = {44 };
 			lwcdiscardswitch(sbuf[0], arg, 1);
 		}
 	} else {

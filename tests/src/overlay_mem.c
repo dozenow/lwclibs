@@ -21,7 +21,7 @@ int main() {
 
 	bzero(mbuf, 4096);
 
-	int *sbuf = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_ANON | MAP_SHARED, -1, 0);
+	register_t *sbuf = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_ANON | MAP_SHARED, -1, 0);
 	if (sbuf == MAP_FAILED) {
 		perror("Can't mmap. So many tears\n");
 		return 0;
@@ -103,7 +103,7 @@ int main() {
 		}
 		memset(mbuf, sbuf[2], 4096*10);
 		sbuf[3] = (sbuf[3] + 1) % 2;
-		printf("Switching to %d\n", sbuf[sbuf[3]]);
+		printf("Switching to %ld\n", sbuf[sbuf[3]]);
 		lwcdiscardswitch(sbuf[sbuf[3]], &sbuf[2], 1);
 		printf("Oops!\n");
 		return EXIT_FAILURE;

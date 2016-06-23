@@ -47,9 +47,11 @@ int main(int argc, const char *argv[]) {
 			printf("local string is at 0x%lx %s. My id is %d but string will be as root (if ran as sudo) \n", (unsigned long) local_string, local_string, getuid());
 			register_t foo[10] = { (register_t)local_string };
 			num_args = 1;
-			lwcsuspendswitch(sbuf[0], foo, 1, &src_args[0], &num_args, 0);
+			int src;
+			num_args = 10;
+			lwcsuspendswitch(sbuf[0], foo, 1, &src, src_args, &num_args);
 
-			printf("got back %d\n", src_args[0]);
+			printf("got back %d\n", src);
 			return 0;
 		} else if (ret == LWC_SWITCHED) {
 			printf("got to the end\n");
@@ -66,7 +68,8 @@ int main(int argc, const char *argv[]) {
 		int fd = lwcsyscall(src, LWCR_MEMORY | LWCR_FILES, SYS_open, src_args[0], O_CREAT, 0);
 		printf("got %d : %s\n", fd, fd < 0 ? strerror(errno) : "open successful");
 		foo[0] = fd;
-		lwcsuspendswitch(sbuf[1], foo, 1, &src_args[0], &num_args, 0);
+		int src;
+		lwcsuspendswitch(sbuf[1], foo, 1, &src, src_args, &num_args);
 		return 3;
 			
 	}
