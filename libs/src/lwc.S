@@ -20,7 +20,7 @@ lwccreate:
    mov    %r8,-0x30(%rbp)
    mov    %r9d,-0x34(%rbp)
    */
-   mov    $546,%eax
+   mov    $550,%eax
    mov    %rcx,%r10
    syscall
    jnc out_c
@@ -41,7 +41,7 @@ lwcsuspendswitch:
    mov    %r8,-0x30(%rbp)
    mov    %r9d,-0x34(%rbp)
    */
-   mov    $547,%eax
+   mov    $551,%eax
    mov    %rcx,%r10
    syscall
    jnc out_swx
@@ -59,7 +59,7 @@ lwcdiscardswitch:
    mov    %esi,-0x14(%rbp)
    mov    %rdx,-0x20(%rbp)
    */
-   mov    $548,%eax
+   mov    $552,%eax
    mov    %rcx,%r10
    syscall
    jnc out_dswx
@@ -77,7 +77,7 @@ lwcoverlay:
    mov    %esi,-0x14(%rbp)
    mov    %rdx,-0x20(%rbp)
    */
-   mov    $549,%eax
+   mov    $553,%eax
    mov    %rcx,%r10
    syscall
    jnc out_ovl
@@ -95,7 +95,7 @@ lwcrestrict:
    mov    %esi,-0x14(%rbp)
    mov    %rdx,-0x20(%rbp)
    */
-   mov    $550,%eax
+   mov    $554,%eax
    mov    %rcx,%r10
    syscall
    jnc out_res
@@ -110,7 +110,7 @@ lwcsyscall:
    push   %rbp
    mov    %rsp,%rbp
    /* uses all six registers */
-   mov    $551,%eax
+   mov    $555,%eax
    mov    %rcx,%r10
    syscall
    jnc out_lwsy
@@ -125,7 +125,7 @@ lwcclose:
    push   %rbp
    mov    %rsp,%rbp
    /* one argument */
-   mov    $552,%eax
+   mov    $556,%eax
    mov    %rcx,%r10
    syscall
    jnc out_lwsc
@@ -139,7 +139,7 @@ lwcgetlwc:
    push   %rbp
    mov    %rsp,%rbp
    /* one argument */
-   mov    $553,%eax
+   mov    $557,%eax
    mov    %rcx,%r10
    syscall
    jnc out_lwget
