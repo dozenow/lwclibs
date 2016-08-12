@@ -9,8 +9,14 @@
 
 #include "lwc.h"
 
+void waitwait(void) {
+	printf("Would be exiting now\n");
+	sleep(30000);
+}
+
 int main() {
 
+	atexit(waitwait);
 	char *mbuf = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 	if (mbuf == MAP_FAILED) {
 		perror("Can't mmap. So many tears\n");
@@ -42,7 +48,7 @@ int main() {
 	specs[0].flags = LWC_RESOURCE_FILES | LWC_RESOURCE_SHARE;
 	specs[0].sub.descriptors.from = specs[0].sub.descriptors.to = -1;
 
-	new_snap = lwccreate(specs, 1, NULL, 0, 0, 0);
+	new_snap = lwccreate(specs, 1, &src, 0, 0, 0);
 
 	if (new_snap >= 0) { // created a snap
 		fprintf(stderr, "src on new snap is %d\n", src);
