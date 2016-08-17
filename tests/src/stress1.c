@@ -9,6 +9,13 @@
 
 #include "lwc.h"
 
+/* this is if you want to stress with suspend only set or not */
+#if 1 
+#define SUSP_ONLY LWC_SUSPEND_ONLY
+#else
+#define SUSP_ONLY 0
+#endif
+
 #define N 12
 #define WIND 1
 int main() {
@@ -56,7 +63,7 @@ int main() {
 	}
 
 	for(int i = 0; i < N; ++i) {
-		int new_snap = lwccreate(specs, 1, NULL, 0, 0, 0);
+		int new_snap = lwccreate(specs, 1, NULL, 0, 0, SUSP_ONLY);
 		if (new_snap >= 0) {
 			printf("new snap created at %d\n", new_snap);
 			sbuf[i] = new_snap;
@@ -65,9 +72,15 @@ int main() {
 			abort();
 		} else {
 			//printf("Child %d doing something\n", lwcgetlwc());
+#if SUSP_ONLY
+			for(;;)
+				lwcsuspendswitch(parent_snap, NULL, 0, NULL, NULL, 0);
+#else
 			lwcdiscardswitch(parent_snap, NULL, 0);
 			perror("child could not discard switch");
 			abort();
+#endif
+
 		}
 	}
 
