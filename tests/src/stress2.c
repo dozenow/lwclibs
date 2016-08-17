@@ -9,8 +9,9 @@
 
 #include "lwc.h"
 
-#define CON 16
+#define CON 128
 #define SWITCHES 2
+#define WIND 1
 int main() {
 
 	register_t *mbuf = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
@@ -26,8 +27,6 @@ int main() {
 		perror("Can't mmap. So many tears\n");
 		return 0;
 	}
-
-	char stackbuf[4096];
 
 	struct lwc_resource_specifier specs[1];
 
@@ -79,12 +78,15 @@ int main() {
 				snapcnt++;
 
 				creations++;
+
 				time_t cur = time(NULL);
-				if (cur != last) {
-					printf("Running %ld seconds with %f creations per second\n",
-					       cur - start, (1.0*creations) / (1.0*cur - start));
+				if (cur - last >= WIND) {
+					printf("Running %ld seconds with %f creations per %d second window\n",
+					       cur - start, (1.0*creations) / (1.0 * WIND), WIND);
+					creations = 0;
+					last = cur;
 				}
-				last = cur;
+
 
 			} else if (new_snap == LWC_SWITCHED) {
 
