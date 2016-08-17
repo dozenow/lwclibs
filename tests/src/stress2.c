@@ -9,8 +9,8 @@
 
 #include "lwc.h"
 
-#define CON 128
-#define SWITCHES 2
+#define CON 12
+#define SWITCHES 3
 #define WIND 1
 int main() {
 
@@ -69,7 +69,7 @@ int main() {
 				snapcnt--;
 			}
 		} else {
-			int new_snap = lwccreate(specs, 1, NULL, 0, 0, 0);
+			int new_snap = lwccreate(specs, 1, NULL, 0, 0, LWC_SUSPEND_ONLY);
 			if (new_snap >= 0) {
 				int idx = 0;
 				for(;snaplist[idx] > 0; ++idx);

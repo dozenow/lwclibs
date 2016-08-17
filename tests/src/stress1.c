@@ -17,7 +17,7 @@
 #endif
 
 #define N 12
-#define WIND 1
+#define WIND 5
 int main() {
 
 	register_t *mbuf = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
