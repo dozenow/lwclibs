@@ -37,7 +37,7 @@ int main() {
 	memset(stackbuf, 1, 4096);
 
 	sbuf[0] = 42;
-	sbuf[1] = 3;
+	sbuf[1] = lwcgetlwc();
 	int late_src = -1;
 	int src = -1;
 	int new_snap;
@@ -80,7 +80,7 @@ int main() {
 		perror("Should not get here\n");
 		return 6;
 	}
-
+	sbuf[1] = lwcgetlwc();
 	new_snap = lwcsuspendswitch(sbuf[0], NULL, 0, &late_src, NULL, NULL);
 	if (new_snap != LWC_SWITCHED && sbuf[0] != 1 && sbuf[1] != 14) {
 		fprintf(stderr, "unexpected finish, new snap is %d and late src is %d and sbuf[0] is %d, sbuf[1] is %d\n", new_snap, late_src, sbuf[0], sbuf[1]);

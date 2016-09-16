@@ -3,6 +3,19 @@ syscall:freebsd:lwccreate:entry {
 	printf("lwccreate(0x%lx, %d, 0x%lx, 0x%lx, 0x%lx(%d), 0x%x)", arg0, arg1, arg2, arg3, arg4, star4, arg5);
 }
 
+syscall:freebsd:lwcclose:entry {
+	printf("lwcclose(%d)", arg0);
+}
+
+syscall:freebsd:lwcclose:return {
+	printf("lwcclose rv = %d", arg1);
+}
+
+fbt:kernel:fdt_insert:return {
+	printf("fdt_insert rv = %d", arg1);
+}
+
+
 syscall::lwccreate:return {
 	printf("lwccreate rv = %d", arg1);
 }
@@ -92,32 +105,32 @@ lwc:kern_lwc:free:syslwc {
 	printf("freeing lwc 0x%lx", arg0);
 }
 
-/* lwc:kern_lwc:forkcpu:syslwc { */
-/* 	printf("current cpu status copied into into lwc 0x%lx", arg0); */
-/* } */
+lwc:kern_lwc:forkcpu:syslwc {
+	printf("current cpu status copied into into lwc 0x%lx", arg0);
+}
 
-/* lwc:kern_lwc:forkvm:syslwc { */
-/* 	printf("current vm forked into lwc 0x%lx", arg0); */
-/* } */
+lwc:kern_lwc:forkvm:syslwc {
+	printf("current vm forked into lwc 0x%lx", arg0);
+}
 
-/* lwc:kern_lwc:sharevm:syslwc { */
-/* 	printf("current shared forked into lwc 0x%lx", arg0); */
-/* } */
+lwc:kern_lwc:sharevm:syslwc {
+	printf("current vm shared into lwc 0x%lx", arg0);
+}
 
-/* lwc:kern_lwc:forkfd:syslwc { */
-/* 	printf("current fd forked into lwc 0x%lx", arg0); */
-/* } */
+lwc:kern_lwc:forkfd:syslwc {
+	printf("current fd forked into lwc 0x%lx", arg0);
+}
 
-/* lwc:kern_lwc:sharefd:syslwc { */
-/* 	/\* print(*args[0]); show all of the struct, *\/ */
-/* 	printf("current fd shared with lwc 0x%lx", arg0); */
-/* } */
+lwc:kern_lwc:sharefd:syslwc {
+	/* print(*args[0]); show all of the struct, */
+	printf("current fd shared with lwc 0x%lx", arg0);
+}
 
-/* lwc:kern_lwc:forkcred:syslwc { */
-/* 	printf("current cred forked into lwc 0x%lx", arg0); */
-/* } */
+lwc:kern_lwc:forkcred:syslwc {
+	printf("current cred forked into lwc 0x%lx, proc uid=%d", arg0, uid);
+}
 
-/* lwc:kern_lwc:sharecred:syslwc { */
-/* 	/\* print(*args[0]); show all of the struct, *\/ */
-/* 	printf("current cred shared with lwc 0x%lx", arg0); */
-/* } */
+lwc:kern_lwc:sharecred:syslwc {
+	/* print(*args[0]); show all of the struct, */
+	printf("current cred shared with lwc 0x%lx, proc uid=%d", arg0, uid);
+}

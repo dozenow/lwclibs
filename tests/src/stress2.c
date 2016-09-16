@@ -22,6 +22,7 @@ struct opts {
 	unsigned int children;
 	unsigned int pages;
 	unsigned int groups;
+	int discard;
 };
 
 int getuint(const char *s, unsigned int *retval) {
@@ -41,17 +42,20 @@ static struct opts g_options = {
 	.children = 1,
 	.pages = 0,
 	.groups = 0,
+	.discard = 0,
 };
 
 
 int readopts(int argc, char *const argv[], struct opts *res) {
-	const char optstring[] = "l:s:w:c:p:h";
+	const char optstring[] = "l:s:w:c:p:hdg:";
 	const char usage[] ="options\n"
+		"\t-c Number of children to fork\n"
+		"\t-d Indicates that all switches should be discard switches\n"
+		"\t-g Number of pages groups\n"
 		"\t-l Number of LWCS to have active in the lwc pool\n"
+		"\t-p Number of pages per page group to\n"
 		"\t-s Number of switches to perform before an lwc must be replaced\n"
 		"\t-w Number of seconds in the time window before outputting timing statistics\n"
-		"\t-c Number of children to fork\n"
-		"\t-p Number of pages per page group to\n"
 		"\t-h Print usage message\n";
 
 	int c;
@@ -76,6 +80,9 @@ int readopts(int argc, char *const argv[], struct opts *res) {
 		case 'g':
 			rv = getuint(optarg, &res->groups);
 			break;
+		case 'd':
+			res->discard = 1;
+			break;
 		default:
 			rv = -1;
 			break;
@@ -99,7 +106,16 @@ struct record {
 	unsigned int switches;
 };
 
+char *g_bufs[1024];
+
+
 int do_child(int pipe, const struct opts *opts) {
+
+
+	for(unsigned int g = 0; g < opts->groups; ++g) {
+		bzero(g_bufs[g], getpagesize() * opts->pages);
+	}
+
 
 	struct lwc_resource_specifier specs[10];
 
@@ -135,7 +151,31 @@ int do_child(int pipe, const struct opts *opts) {
 	unsigned int creations = 0;
 	unsigned int switches = 0;
 
+	unsigned int check_time = 0; /* check when mod some value */
+
 	for(;;) {
+
+		/* this is just to reduce measurement overhead on this. didn't want to mess with rtdsc */
+		check_time = (check_time + 1) % 1;//503;
+		if (check_time == 0) {
+			time_t cur = time(NULL);
+			if (cur - last >= opts->seconds) {
+				struct record rec = {
+					.creations = creations,
+					.switches = switches
+				};
+				creations = 0;
+				switches = 0;
+				last = cur;
+				ssize_t wrote = write(pipe, &rec, sizeof(rec));
+				if (wrote < (ssize_t) sizeof(rec)) {
+					printf("failed to write statistics (%s), bailing\n", strerror(errno));
+					return EXIT_FAILURE;
+				}
+			}
+		}
+
+
 		if (snapcnt == opts->lwcs) {
 			int idx = rand() % opts->lwcs;
 			int nxt = snaplist[idx];
@@ -155,8 +195,9 @@ int do_child(int pipe, const struct opts *opts) {
 				snapcnt--;
 			}
 		} else {
-			int new_snap = lwccreate(specs, 2, NULL, 0, 0, LWC_SUSPEND_ONLY);
+			int new_snap = lwccreate(specs, 2, NULL, 0, 0, opts->discard ? 0: LWC_SUSPEND_ONLY);
 			if (new_snap >= 0) {
+
 
 				//lwcclose(new_snap);
 				//exit(0);
@@ -168,28 +209,18 @@ int do_child(int pipe, const struct opts *opts) {
 
 				creations++;
 
-				time_t cur = time(NULL);
-				if (cur - last >= opts->seconds) {
-					struct record rec = {
-						.creations = creations,
-						.switches = switches
-					};
-					creations = 0;
-					switches = 0;
-					last = cur;
-					ssize_t wrote = write(pipe, &rec, sizeof(rec));
-					if (wrote < (ssize_t) sizeof(rec)) {
-						printf("failed to write statistics (%s), bailing\n", strerror(errno));
-						return EXIT_FAILURE;
-					}
-				}
-
 
 			} else if (new_snap == LWC_SWITCHED) {
 
+
 				for(;;) { /* child loop */
-					if (lwcsuspendswitch(parent_snap, NULL, 0, NULL, NULL, 0) == LWC_FAILED)
+					if (opts->discard && (lwcdiscardswitch(parent_snap, NULL, 0) == LWC_FAILED)) {
+						printf("discardswitch in child failed: %s\n", strerror(errno));
 						return EXIT_FAILURE;
+					} else if (lwcsuspendswitch(parent_snap, NULL, 0, NULL, NULL, 0) == LWC_FAILED) {
+						printf("suspendswitch in child failed: %s\n", strerror(errno));
+						return EXIT_FAILURE;
+					}
 				}
 			} else if (new_snap == LWC_FAILED) {
 				perror("Can't create snap");
@@ -246,7 +277,6 @@ void proc_exit() {
 	}
 }
 
-
 int main(int argc, char * const argv[]) {
 
 
@@ -264,8 +294,12 @@ int main(int argc, char * const argv[]) {
 		}
 		/* touch all the pages */
 		bzero(mbuf, getpagesize() * g_options.pages);
-
 		/* and...leak the pages */
+		if (g < 1024) {
+			g_bufs[g] = mbuf;
+		}
+
+
 	}
 
 	for(unsigned int i = 0; i < g_options.children; ++i) {
@@ -283,7 +317,6 @@ int main(int argc, char * const argv[]) {
 			if (kids[i].pid == -1) {
 				do_fork(&kids[i]);
 			} else {
-				//printf("parent attempting to read child %d\n", i);
 				struct record rec;
 				ssize_t rv = read(kids[i].pipe, &rec, sizeof(rec));
 				if (rv < (ssize_t)sizeof(rec)) {
