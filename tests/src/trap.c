@@ -86,25 +86,17 @@ int main() {
 	bzero(sbuf, 4096);
 
 	
+
+
 	struct lwc_resource_specifier specs[10];
 	/* share the file table */
 	specs[0].flags = LWC_RESOURCE_FILES | LWC_RESOURCE_SHARE;
 	specs[0].sub.descriptors.from = specs[0].sub.descriptors.to = -1;
 
-	register_t from_args[11];
-	int num_from = 11;
-	int new_lwc = lwccreate(specs, 1, NULL, from_args, &num_from, 0);
-	if (new_lwc >= 0) {
-		sbuf[parent_lwc] = new_lwc;
-		lwcdiscardswitch(sbuf[parent_lwc], NULL, 0);
-	} else if (new_lwc == LWC_FAILED) {
-		perror("LWC failed\n");
-		return EXIT_FAILURE;
-	}
 
-	/* now in parent_lwc */
+	sbuf[parent_lwc] = lwcgetlwc();
 
-	new_lwc = lwccreate(specs, 1, NULL, NULL, NULL, LWC_TRAP_SYSCALL);
+	int new_lwc = lwccreate(specs, 1, NULL, NULL, NULL, LWC_TRAP_SYSCALL);
 	if (new_lwc >= 0) {
 		sbuf[child_lwc] = new_lwc;
 		parent_loop();
