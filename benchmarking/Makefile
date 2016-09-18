@@ -2,7 +2,7 @@ include ../Makefile.inc
 
 VPATH=.:src:include
 DEPFILE = .depends
-TARGETS=switcher switcher_pthread switcher_pthread_sem switcher_pth switcher_ipc switcher_pthr_ipc switcher_uctx
+TARGETS=switcher switcher_pthread switcher_pthread_sem switcher_pth switcher_ipc switcher_pthr_ipc switcher_uctx revert revert_sw
 
 STATICLWC=../libs/liblwc.a
 LIBDIRS = -L../libs/ 
@@ -31,6 +31,12 @@ switcher_pth : src/switcher_pth.o src/bench.o
 
 switcher_uctx : src/switcher_uctx.o src/bench.o $(LIBS)
 	$(CXX) $(CXXFLAGS) src/switcher_uctx.o src/bench.o $(LIBDIRS) $(LIBS) -o $@
+
+revert : src/revert.cpp src/bench.o $(LIBS)
+	$(CXX) $(CXXFLAGS) -O2 src/revert.cpp src/bench.o $(LIBDIRS) $(LIBS) -o $@
+
+revert_sw : src/revert_sw.cpp src/bench.o $(LIBS)
+	$(CXX) $(CXXFLAGS) -O2 src/revert_sw.cpp src/bench.o $(LIBDIRS) $(LIBS) -o $@
 
 switcher : src/switcher.o src/bench.o $(LIBS)
 	$(CXX) $(CXXFLAGS) src/switcher.o src/bench.o $(LIBDIRS) $(LIBS) -o $@
