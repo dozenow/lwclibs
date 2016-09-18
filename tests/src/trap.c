@@ -25,7 +25,8 @@ void parent_loop() {
 	register_t to_args[11];
 	register_t from_args[11];
 	int num_from = 11;
-	if (lwcsuspendswitch(sbuf[child_lwc], to_args, 0, NULL, from_args, &num_from) == LWC_FAILED) {
+	int src;
+	if (lwcsuspendswitch(sbuf[child_lwc], to_args, 0, &src, from_args, &num_from) == LWC_FAILED) {
 		perror("LWC suspend in parent failed: ");
 		exit(1);
 	}
@@ -36,35 +37,35 @@ void parent_loop() {
 		/* first value is errno, second is return code */
 
 		if (num_from < 1) {
-			goto inval;
+			fprintf(stderr, "Not enough args\n");
+			to_args[0] = EINVAL;
+			to_args[1] = -1;
 		} else {
+
+			/* NOte that any pointers in from_args is pointing to the
+			 * other lwc's memory. if we don't have it we can't see
+			 * it. */
+
+
 			if (from_args[0] == SYS_stat) {
 				/* arg[0] == syscall number, arg[i] is (i-1)th argument to syscall */
-				if (num_from != 3)
-					goto inval;
-
-				/* this time we will assume arguments are all from
+				/* for printing we will assume arguments are all from
 				 * shared memory. other stuff tests overlays */
 
 				const char *path = (const char*) from_args[1];
-				struct stat *sb = (struct stat *) from_args[2];
 				fprintf(stderr, "attempting to stat %s for child from parent\n", path);
-				errno = 0;
-				to_args[1] = stat(path, sb);;
-				to_args[0] = errno;
-				goto ret;
-
+			} else if (from_args[0] == SYS_open) {
+				fprintf(stderr, "attempting open call of %s from child\n", from_args[0]);
+			} else {
+				fprintf(stderr, "attempting other syscall %d\n", from_args[0]);
 			}
-			goto inval; /* test program only does stat */
-		}
 
-	  inval:
-		to_args[0] = EINVAL;
-		to_args[1] = -1;
+			errno = 0;
+			to_args[1] = lwcsyscall(src, LWCR_FILES | LWCR_MEMORY, from_args[0], from_args[1], from_args[2], from_args[3]);
+			to_args[0] = errno;
+		} 
 
-	  ret:
-
-		fprintf(stderr, "returning %ld %ld\n", to_args[0], to_args[1]);
+		fprintf(stderr, "returning %ld %ld %s\n", to_args[0], to_args[1], strerror(errno));
 
 		num_from = 10;
 		if (lwcsuspendswitch(sbuf[child_lwc], to_args, 2, NULL, from_args, &num_from) == LWC_FAILED) {
@@ -112,15 +113,21 @@ int main() {
 		return EXIT_FAILURE;
 	}
 
+	int ret;
+	
 	char *path = sbuf + 10;
 	strcpy(path, "/etc/passwd");
 	struct stat *sb = (struct stat *) (sbuf + 100);
 
 	errno = 0;
-	int ret = stat(path, sb);
+	ret = stat(path, sb);
 	if (ret == -1) {
 		printf("stat had an error: %s\n", strerror(errno));
 	}
 	printf("return value of stat is %d and errno is %d. size is %ld\n", ret, errno, sb->st_size);
+
+	ret = open(path, O_RDONLY);
+	printf("return value of open is %d and errno is %d and %s.\n", ret, errno, strerror(errno));
+	
 	return EXIT_SUCCESS;
 }
