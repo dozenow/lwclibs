@@ -122,12 +122,12 @@ int main() {
 	errno = 0;
 	ret = stat(path, sb);
 	if (ret == -1) {
-		printf("stat had an error: %s\n", strerror(errno));
+		fprintf(stderr, "stat had an error: %s\n", strerror(errno));
 	}
-	printf("return value of stat is %d and errno is %d. size is %ld\n", ret, errno, sb->st_size);
+	fprintf(stderr, "return value of stat is %d and errno is %d. size is %ld\n", ret, errno, sb->st_size);
 
 	ret = open(path, O_RDONLY);
-	printf("return value of open is %d and errno is %d and %s.\n", ret, errno, strerror(errno));
+	fprintf(stderr, "return value of open is %d and errno is %d and %s.\n", ret, errno, strerror(errno));
 	
 	return EXIT_SUCCESS;
 }
