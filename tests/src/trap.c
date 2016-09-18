@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <sys/stat.h>
+#include <sys/sysctl.h>
 #include <sys/syscall.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -18,6 +19,9 @@
 static char *sbuf;
 static int parent_lwc = 0;
 static int child_lwc = 1;
+
+
+#define strerror(x) (sys_errlist[x])
 
 void parent_loop() {
 
@@ -55,9 +59,9 @@ void parent_loop() {
 				const char *path = (const char*) from_args[1];
 				fprintf(stderr, "attempting to stat %s for child from parent\n", path);
 			} else if (from_args[0] == SYS_open) {
-				fprintf(stderr, "attempting open call of %s from child\n", from_args[0]);
+				fprintf(stderr, "attempting open call of 0x%lx from child\n", from_args[0]);
 			} else {
-				fprintf(stderr, "attempting other syscall %d\n", from_args[0]);
+				fprintf(stderr, "attempting other syscall %ld %ld \n", from_args[0], from_args[1]);
 			}
 
 			errno = 0;
@@ -132,7 +136,12 @@ int main() {
 	char buf[128] = { 0 };
 	fprintf(stderr, "read returned %zd\n", read(ret, buf, sizeof(buf)-1));
 	fprintf(stderr, "errstr is %s\n", strerror(errno));
-	fprintf(stderr, "buf contains %s\n", buf);
+	//fprintf(stderr, "buf contains %s\n", buf);
+
+	size_t frames = 42;
+	size_t oldlen = sizeof(frames);
+	ret = sysctlbyname("kern.lwc.max_frames", &frames, &oldlen, NULL, 0);
+	fprintf(stderr, "return of sysctlbyname is %d and frames is now set to %zd. errstr(%d)=%s\n", ret, frames, errno, strerror(errno));
 	
 	
 	return EXIT_SUCCESS;
