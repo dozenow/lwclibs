@@ -128,6 +128,12 @@ int main() {
 
 	ret = open(path, O_RDONLY);
 	fprintf(stderr, "return value of open is %d and errno is %d and %s.\n", ret, errno, strerror(errno));
+
+	char buf[128] = { 0 };
+	fprintf(stderr, "read returned %zd\n", read(ret, buf, sizeof(buf)-1));
+	fprintf(stderr, "errstr is %s\n", strerror(errno));
+	fprintf(stderr, "buf contains %s\n", buf);
+	
 	
 	return EXIT_SUCCESS;
 }
