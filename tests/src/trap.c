@@ -91,13 +91,13 @@ int main() {
 
 	struct lwc_resource_specifier specs[10];
 	/* share the file table */
-	specs[0].flags = LWC_RESOURCE_FILES | LWC_RESOURCE_SHARE;
-	specs[0].sub.descriptors.from = specs[0].sub.descriptors.to = -1;
+	//specs[0].flags = LWC_RESOURCE_FILES | LWC_RESOURCE_SHARE;
+	//specs[0].sub.descriptors.from = specs[0].sub.descriptors.to = -1;
 
 
 	sbuf[parent_lwc] = lwcgetlwc();
 
-	int new_lwc = lwccreate(specs, 1, NULL, NULL, NULL, LWC_TRAP_SYSCALL);
+	int new_lwc = lwccreate(specs, 0, NULL, NULL, NULL, LWC_TRAP_SYSCALL);
 	if (new_lwc >= 0) {
 		sbuf[child_lwc] = new_lwc;
 		parent_loop();
