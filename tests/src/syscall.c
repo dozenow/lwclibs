@@ -63,10 +63,10 @@ int main(int argc, const char *argv[]) {
 			printf("uid not de-escalated in lwc=%d, uid=%d euid=%d\n", lwcgetlwc(), getuid(), geteuid());
 			return 4;
 		}
-		register_t foo[10];
-
-		printf("being asked to open 0x%lx for %d with %d args and uid %d in lwc %d\n", src_args[0], src, num_args, getuid(), lwcgetlwc());
-		int fd = lwcsyscall(src, LWCR_MEMORY | LWCR_FILES, SYS_open, src_args[0], O_CREAT, 0);
+		char local_here[20] = "/tmp/foobar";
+		register_t foo[10] = { src_args[0], O_CREAT, 0 };
+		printf("being asked to open foo(0x%lx) = { 0x%lx, %ld, %ld } for %d with %d args and uid %d in lwc %d\n", (unsigned long) foo, foo[0], foo[1], foo[2], src, num_args, getuid(), lwcgetlwc());
+		int fd = lwcsyscall(src, LWCR_MEMORY | LWCR_FILES, SYS_open, foo);
 		printf("got %d : %s\n", fd, fd < 0 ? strerror(errno) : "open successful");
 		foo[0] = fd;
 		int src;

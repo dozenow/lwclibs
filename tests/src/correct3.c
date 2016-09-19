@@ -71,7 +71,8 @@ int main() {
 
 	int new_lwc = lwccreate(specs, 6, &src, src_arg, &num_args, 0);
 	if (new_lwc == LWC_SWITCHED) {
-		int fd = lwcsyscall(src, LWCR_CREDENT, SYS_open, (register_t) "/tmp/FOO", O_CREAT, 0);
+		register_t regs[10] = { (register_t) "/tmp/FOO", O_CREAT, 0 };
+		int fd = lwcsyscall(src, LWCR_CREDENT, SYS_open, regs);
 		close(fd);
 		printf("Came out in first one with src=%d and arg=%ld with %d args\n", src, src_arg[0], num_args);
 	}

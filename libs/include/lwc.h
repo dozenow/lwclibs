@@ -23,7 +23,7 @@ extern int lwcdiscardswitch(int to, register_t *to_arg, int num_toargs);
 extern int lwccreate(struct lwc_resource_specifier *resources, int numr, int *src, void *src_arg, int *num_args, int flags);
 extern int lwcoverlay(int from, struct lwc_resource_specifier *resources, int numr);
 extern int lwcrestrict(int lwc, struct lwc_resource_specifier *resources, int numr);
-extern int lwcsyscall(int lwc, unsigned int mask, int syscall, register_t arg1, register_t arg2, register_t arg3);
+extern int lwcsyscall(int lwc, unsigned int mask, int syscall, register_t *args);
 extern int lwcclose(int lwc);
 extern int lwcgetlwc();
 

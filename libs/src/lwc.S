@@ -109,7 +109,7 @@ out_res:
 lwcsyscall: 
    push   %rbp
    mov    %rsp,%rbp
-   /* uses all six registers */
+   /* four arguments */
    mov    $555,%eax
    mov    %rcx,%r10
    syscall

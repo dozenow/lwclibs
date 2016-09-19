@@ -64,9 +64,11 @@ void parent_loop() {
 				fprintf(stderr, "attempting other syscall %ld %ld \n", from_args[0], from_args[1]);
 			}
 
+			fprintf(stderr, "[1] (%ld) 0x%lx, [2] (%ld) 0x%lx, [3] (%ld) 0x%lx\n", from_args[1], from_args[1], from_args[2], from_args[2], from_args[3], from_args[3]);
 			errno = 0;
-			to_args[1] = lwcsyscall(src, LWCR_FILES | LWCR_MEMORY, from_args[0], from_args[1], from_args[2], from_args[3]);
+			to_args[1] = lwcsyscall(src, LWCR_FILES | LWCR_MEMORY, from_args[0], &from_args[1]);
 			to_args[0] = errno;
+			
 		} 
 
 		fprintf(stderr, "returning %ld %ld %s\n", to_args[0], to_args[1], strerror(errno));
@@ -118,7 +120,7 @@ int main() {
 	}
 
 	int ret;
-	
+#if 0	
 	char *path = sbuf + 10;
 	strcpy(path, "/etc/passwd");
 	struct stat *sb = (struct stat *) (sbuf + 100);
@@ -137,7 +139,7 @@ int main() {
 	fprintf(stderr, "read returned %zd\n", read(ret, buf, sizeof(buf)-1));
 	fprintf(stderr, "errstr is %s\n", strerror(errno));
 	//fprintf(stderr, "buf contains %s\n", buf);
-
+#endif
 	size_t frames = 42;
 	size_t oldlen = sizeof(frames);
 	ret = sysctlbyname("kern.lwc.max_frames", &frames, &oldlen, NULL, 0);
