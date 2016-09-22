@@ -39,6 +39,10 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
+//#define perr(...) fprintf(stderr, __VA_ARGS__)
+//#define perr(...) do { fprintf(stderr, "pid: %d ", getpid()); fprintf(stderr, __VA_ARGS__); } while(0)
+#define perr(...)
+
 extern int php_hash_environment(void);
 
 
@@ -53,6 +57,7 @@ static int snap_fd;
 static sh_ht_t *snap_hash;
 static struct sh_memory_pool *snap_mp;
 static void *snap_mempool_addr;
+
 
 /* {{{ PHP_INI
  */
@@ -97,6 +102,7 @@ PHP_FUNCTION(confirm_snap_compiled)
 PHP_FUNCTION(snapcache)
 {
 	int argc = ZEND_NUM_ARGS();
+
 	zend_long expiration;
 
 	if (zend_parse_parameters(argc, "l", &expiration) == FAILURE) 
@@ -104,52 +110,36 @@ PHP_FUNCTION(snapcache)
 
 	char buf[128];
 	int retval = 42;
-	if (time(NULL) < expiration) {
+	if (1 /* not expired */) {
 		/* share the file table */
 		struct lwc_resource_specifier specs[2];
 		specs[0].flags = LWC_RESOURCE_FILES | LWC_RESOURCE_SHARE;
 		specs[0].sub.descriptors.from = specs[0].sub.descriptors.to = -1;
 
-		size_t env = (size_t) environ;
-		php_printf("rounded as 0x%lx\n", env & ~(4095));
-		for(char ** cur = environ; *cur; cur++) {
-			php_printf("0x%lx 0x%lx\n", (unsigned long) cur, ((unsigned long) cur) & ~(4095));
-		}
-		specs[1].flags = LWC_RESOURCE_MEMORY | LWC_RESOURCE_SHARE;
-		specs[1].sub.memory.start = env & ~(4095);
-		specs[1].sub.memory.end = (env & ~(4095)) + 4096;
-
-		int rv = lwccreate(specs, 2, NULL, NULL, NULL, 0);
-		snprintf(buf, sizeof(buf), "snap rv = %d\n", rv);
-		write(snap_fd, buf, strlen(buf));
-		php_printf("%s", buf);
+		int rv = lwccreate(specs, 1, NULL, NULL, NULL, 0);
+		//perr("snap rv = %d\n", rv);
 		if (rv == LWC_SWITCHED) {
-			SG(redo)();
+			SG(global_request_time) = 0; //force time to update
 			php_hash_environment();
-			php_printf("qs=%s\n", SG(request_info).query_string);
+			php_startup_auto_globals();
+			//perr("req time=%f qs=%s\n", SG(global_request_time), SG(request_info).query_string);
 			retval = 0;
 		} else if (rv == LWC_FAILED) {
 			retval = -1;
-			php_error(E_ERROR, "SNAP FAILED: %s\n", strerror(errno));
+			perr("SNAP FAILED: %s\n", strerror(errno));
 		} else if (rv >= 0) {
 			retval = 1;
 			char *uri = SG(request_info).request_uri;
 			int upval = sh_ht_update(snap_hash, uri, strlen(uri)+1, (void*)(size_t)rv, sizeof(rv));
 			if (upval == 1) {
-				snprintf(buf, sizeof(buf), "Item at %s already existed. \n", uri);
-				write(snap_fd, buf, strlen(buf));
-				php_printf("%s\n", buf);
-				
+				perr("Item at %s already existed. \n", uri);
 			} else if (upval == 0) {
-				snprintf(buf, sizeof(buf), "Item at %s inserted.\n", uri);
-				write(snap_fd, buf, strlen(buf));
-				php_printf("%s\n", buf);
+				perr("Item at %s inserted.\n", uri);
 			}
 
 		}
 	} else {
-		snprintf(buf, sizeof(buf), "%d <= %d\n", time(NULL), expiration);
-		write(snap_fd, buf, strlen(buf));
+		perr("snap expired %ld <= %ld\n", time(NULL), expiration);
 	}
 
 	RETURN_LONG(retval);
@@ -206,24 +196,19 @@ static void sfd_free(void *src, struct sh_memory_pool *mp) {
 
 #define MEMPOOL_MMAP_SIZE (4096*100)
 
-/* {{{ PHP_MINIT_FUNCTION
- */
-PHP_MINIT_FUNCTION(snap)
-{
-	/* If you have INI entries, uncomment these lines
-	REGISTER_INI_ENTRIES();
-	*/
-	snap_fd = open("/tmp/phpsnap.txt", O_CREAT | O_TRUNC | O_WRONLY);
+static int do_init() {
 
-
+	perr("snap minit pid=%d\n", getpid());
 	snap_mempool_addr = mmap(NULL, MEMPOOL_MMAP_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_SHARED, -1, 0);
 	if (snap_mempool_addr == MAP_FAILED) {
+		perr("Snap minit failed in mmap: %s\n", strerror(errno));
 		php_error(E_ERROR, "Snap minit failed in mmap: %s\n", strerror(errno));
 		return FAILURE;
 	}
 
 	snap_mp = init_sh_mempool(snap_mempool_addr, MEMPOOL_MMAP_SIZE);
 	if (!snap_mp) {
+		perr("Failed to init mempool\n");
 		php_error(E_ERROR, "Failed to init mempool\n");
 		return FAILURE;
 	}
@@ -232,6 +217,7 @@ PHP_MINIT_FUNCTION(snap)
 	if (!snap_hash) {
 		snap_mp = NULL;
 		munmap(snap_mempool_addr, MEMPOOL_MMAP_SIZE);
+		perr("Failed to init snap_hash\n");
 		php_error(E_ERROR, "Failed to init snap_hash\n");
 	}
 
@@ -241,12 +227,25 @@ PHP_MINIT_FUNCTION(snap)
 	specs[0].sub.descriptors.from = specs[0].sub.descriptors.to = -1;
 	int rv = lwccreate(specs, 1, NULL, NULL, NULL, 0);
 	if (rv < 0) {
+		perr("can't init a snap\n");
 		php_error(E_ERROR, "I can't init a snap\n");
 		return FAILURE;
 	}
 
-	char buf[] = "opened snap_fd and initialized HT\n";
-	write(snap_fd, buf, strlen(buf));
+	perr("initialized HT");
+
+	return SUCCESS;
+
+}
+
+/* {{{ PHP_MINIT_FUNCTION
+ */
+PHP_MINIT_FUNCTION(snap)
+{
+	/* If you have INI entries, uncomment these lines
+	REGISTER_INI_ENTRIES();
+	*/
+
 	return SUCCESS;
 }
 /* }}} */
@@ -259,10 +258,13 @@ PHP_MSHUTDOWN_FUNCTION(snap)
 	UNREGISTER_INI_ENTRIES();
 	*/
 
+#if 0
 	close(snap_fd);
+	//unlink("/tmp/phpsnap.txt");
 	sh_ht_destroy(&snap_hash);
 	snap_mp = NULL;
 	munmap(snap_mempool_addr, MEMPOOL_MMAP_SIZE);
+#endif
 
 
 	return SUCCESS;
@@ -277,6 +279,14 @@ PHP_RINIT_FUNCTION(snap)
 #if defined(COMPILE_DL_SNAP) && defined(ZTS)
 	ZEND_TSRMLS_CACHE_UPDATE();
 #endif
+
+	if (!snap_mempool_addr) {
+		if (do_init() == FAILURE) {
+			perr("failed to init\n");
+			return FAILURE;
+		};
+	}
+
 	char *uri = SG(request_info).request_uri;
 
 	if (!uri)
@@ -284,24 +294,19 @@ PHP_RINIT_FUNCTION(snap)
 
 	char buf[128];
 
-	snprintf(buf, sizeof(buf), "requested %s\n", uri);
-	write(snap_fd, buf, strlen(buf));
+	perr("requested %s\n", uri);
 
 	sh_ht_iterator_t *it = sh_ht_get(snap_hash, uri, strlen(uri)+1);
 	if (it) {
 		int fd;
 		size_t fdsize;
 		sh_ht_value(it, (void*) &fd, &fdsize);
-		snprintf(buf, sizeof(buf), "present in HT, val is %d. Trying to switch\n", fd);
-		write(snap_fd, buf, strlen(buf));
+		perr("-->present in HT, val is %d. Trying to switch\n", fd);
 		free_ht_iterator(it);
 		int ret = lwcdiscardswitch(fd, NULL, 0);
-		snprintf(buf, sizeof(buf), "arrived post snap: rv=%d, err=%s\n", ret, strerror(errno));
-		write(snap_fd, buf, strlen(buf));
-		php_error(E_ERROR, buf);
+		perr("arrived post snap: rv=%d, err=%s\n", ret, strerror(errno));
 	} else {
-		snprintf(buf, sizeof(buf), "not present in HT\n");
-		write(snap_fd, buf, strlen(buf));
+		perr("req not present in HT\n");
 	}
 
 	return SUCCESS;
