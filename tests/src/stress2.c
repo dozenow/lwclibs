@@ -24,6 +24,7 @@ struct opts {
 	unsigned int pages_to_dirty; 
 	unsigned int groups;
 	unsigned int groups_to_dirty;
+	unsigned int iterations;
 	FILE *fp;
 	int discard;
 };
@@ -48,12 +49,13 @@ static struct opts g_options = {
 	.groups = 0,
 	.groups_to_dirty = 0,
 	.discard = 0,
+	.iterations = 0,
 	.fp = NULL,
 };
 
 
 int readopts(int argc, char *const argv[], struct opts *res) {
-	const char optstring[] = "l:s:w:c:p:hdg:G:P:f:";
+	const char optstring[] = "l:s:w:c:p:hdg:G:P:f:i:";
 	const char usage[] ="options\n"
 		"\t-c Number of children to fork\n"
 		"\t-d Indicates that all switches should be discard switches\n"
@@ -64,6 +66,7 @@ int readopts(int argc, char *const argv[], struct opts *res) {
 		"\t-P Number of pages per group to dirty between creates (whole number) \n"
 		"\t-s Number of switches to perform before an lwc must be replaced\n"
 		"\t-w Number of seconds in the time window before outputting timing statistics\n"
+		"\t-i Number of iterations (windows) before quitting\n"
 		"\t-f Filename to write data out to\n"
 		"\t-h Print usage message\n";
 
@@ -80,6 +83,9 @@ int readopts(int argc, char *const argv[], struct opts *res) {
 				setbuf(res->fp, NULL);
 				rv = 0;
 			}
+			break;
+		case 'i':
+			rv = getuint(optarg, &res->iterations);
 			break;
 		case 'P':
 			rv = getuint(optarg, &res->pages_to_dirty);
@@ -357,7 +363,7 @@ int main(int argc, char * const argv[]) {
 		do_fork(&kids[i]);
 	}
 
-	for(int w = 0;;++w) {
+	for(unsigned w = 0; (g_options.iterations == 0 || w < g_options.iterations) ;++w) {
 
 		struct record sum = {0,0};
 		for(unsigned int i = 0; i < g_options.children; ++i) {
