@@ -21,7 +21,9 @@ struct opts {
 	unsigned int seconds;
 	unsigned int children;
 	unsigned int pages;
+	unsigned int pages_to_dirty; 
 	unsigned int groups;
+	unsigned int groups_to_dirty;
 	int discard;
 };
 
@@ -41,19 +43,23 @@ static struct opts g_options = {
 	.seconds = 10,
 	.children = 1,
 	.pages = 0,
+	.pages_to_dirty = 0,
 	.groups = 0,
+	.groups_to_dirty = 0,
 	.discard = 0,
 };
 
 
 int readopts(int argc, char *const argv[], struct opts *res) {
-	const char optstring[] = "l:s:w:c:p:hdg:";
+	const char optstring[] = "l:s:w:c:p:hdg:G:P:";
 	const char usage[] ="options\n"
 		"\t-c Number of children to fork\n"
 		"\t-d Indicates that all switches should be discard switches\n"
 		"\t-g Number of pages groups\n"
+		"\t-G Number of groups to dirty (page count set by -P) \n"
 		"\t-l Number of LWCS to have active in the lwc pool\n"
 		"\t-p Number of pages per page group to\n"
+		"\t-P Number of pages per group to dirty between creates (whole number) \n"
 		"\t-s Number of switches to perform before an lwc must be replaced\n"
 		"\t-w Number of seconds in the time window before outputting timing statistics\n"
 		"\t-h Print usage message\n";
@@ -62,6 +68,12 @@ int readopts(int argc, char *const argv[], struct opts *res) {
 	int rv = 0;
 	while(!rv && ((c=getopt(argc, argv, optstring)) != -1)) {
 		switch(c) {
+		case 'P':
+			rv = getuint(optarg, &res->pages_to_dirty);
+			break;
+		case 'G':
+			rv = getuint(optarg, &res->groups_to_dirty);
+			break;
 		case 'l':
 			rv = getuint(optarg, &res->lwcs);
 			break;
@@ -89,9 +101,19 @@ int readopts(int argc, char *const argv[], struct opts *res) {
 		}
 	}
 
+	if (res->pages_to_dirty > res->pages) {
+		fprintf(stderr, "-P %u > -p %u inconsistent\n", res->pages_to_dirty, res->pages);
+		rv = -1;
+	}
+
+	if (res->groups_to_dirty > res->groups) {
+		fprintf(stderr, "-G %u > -g %u inconsistent\n", res->groups_to_dirty, res->groups);
+		rv = -1;
+	}
+
 	if (rv) {
 		puts(usage);
-	}
+	} 
 
 	return rv;
 }
@@ -106,7 +128,7 @@ struct record {
 	unsigned int switches;
 };
 
-char *g_bufs[1024];
+char **g_bufs = NULL;
 
 
 int do_child(int pipe, const struct opts *opts) {
@@ -196,6 +218,8 @@ int do_child(int pipe, const struct opts *opts) {
 			}
 		} else {
 			int new_snap = lwccreate(specs, 2, NULL, 0, 0, opts->discard ? 0: LWC_SUSPEND_ONLY);
+			unsigned int sum = 0;
+
 			if (new_snap >= 0) {
 
 
@@ -214,6 +238,18 @@ int do_child(int pipe, const struct opts *opts) {
 
 
 				for(;;) { /* child loop */
+					if (opts->groups_to_dirty + opts->pages_to_dirty > 0) {
+						for(unsigned int g = 0; g < opts->groups; ++g) {
+							for(unsigned int p = 0; p < opts->pages; ++p) {
+								if (g < opts->groups_to_dirty && p < opts->pages_to_dirty) {
+									g_bufs[g][p*4096] = 1;
+								} else {
+									sum += g_bufs[g][p*4096];
+								}
+							}
+						}
+					}
+
 					if (opts->discard && (lwcdiscardswitch(parent_snap, NULL, 0) == LWC_FAILED)) {
 						printf("discardswitch in child failed: %s\n", strerror(errno));
 						return EXIT_FAILURE;
@@ -223,7 +259,10 @@ int do_child(int pipe, const struct opts *opts) {
 					}
 				}
 			} else if (new_snap == LWC_FAILED) {
-				perror("Can't create snap");
+				//this is really just so sum doesn't get compiled away
+				fprintf(stderr, "sum was %u\n", sum);
+
+				perror("Can't create snap: ");
 				return EXIT_FAILURE;
 			}
 		}
@@ -284,6 +323,7 @@ int main(int argc, char * const argv[]) {
 		return EXIT_FAILURE;
 	}
 
+	g_bufs = malloc((g_options.groups) * sizeof(*g_bufs));
 	kids = malloc((g_options.children)* sizeof(*kids));
 
 	for(unsigned int g = 0; g < g_options.groups; ++g) {
@@ -294,20 +334,13 @@ int main(int argc, char * const argv[]) {
 		}
 		/* touch all the pages */
 		bzero(mbuf, getpagesize() * g_options.pages);
-		/* and...leak the pages */
-		if (g < 1024) {
-			g_bufs[g] = mbuf;
-		}
-
-
+		g_bufs[g] = mbuf;
 	}
 
 	for(unsigned int i = 0; i < g_options.children; ++i) {
 
 		/* setup so return means in parent and success. */
 		do_fork(&kids[i]);
-
-
 	}
 
 	for(int w = 0;;++w) {
