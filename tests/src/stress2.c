@@ -24,6 +24,7 @@ struct opts {
 	unsigned int pages_to_dirty; 
 	unsigned int groups;
 	unsigned int groups_to_dirty;
+	FILE *fp;
 	int discard;
 };
 
@@ -47,11 +48,12 @@ static struct opts g_options = {
 	.groups = 0,
 	.groups_to_dirty = 0,
 	.discard = 0,
+	.fp = NULL,
 };
 
 
 int readopts(int argc, char *const argv[], struct opts *res) {
-	const char optstring[] = "l:s:w:c:p:hdg:G:P:";
+	const char optstring[] = "l:s:w:c:p:hdg:G:P:f:";
 	const char usage[] ="options\n"
 		"\t-c Number of children to fork\n"
 		"\t-d Indicates that all switches should be discard switches\n"
@@ -62,12 +64,23 @@ int readopts(int argc, char *const argv[], struct opts *res) {
 		"\t-P Number of pages per group to dirty between creates (whole number) \n"
 		"\t-s Number of switches to perform before an lwc must be replaced\n"
 		"\t-w Number of seconds in the time window before outputting timing statistics\n"
+		"\t-f Filename to write data out to\n"
 		"\t-h Print usage message\n";
 
 	int c;
 	int rv = 0;
 	while(!rv && ((c=getopt(argc, argv, optstring)) != -1)) {
 		switch(c) {
+		case 'f':
+			res->fp = fopen(optarg, "a");
+			if (res->fp == NULL) {
+				fprintf(stderr, "Could not open file %s: %s\n", optarg, strerror(errno));
+				rv = -1;
+			} else {
+				setbuf(res->fp, NULL);
+				rv = 0;
+			}
+			break;
 		case 'P':
 			rv = getuint(optarg, &res->pages_to_dirty);
 			break;
@@ -306,12 +319,12 @@ void proc_exit() {
 				kids[i].pid = -1;
 				close(kids[i].pipe);
 				handled = 1;
-				printf("child %d exited(%d) with status %d\n", p, WIFEXITED(status), WEXITSTATUS(status));
+				fprintf(stderr, "child %d exited(%d) with status %d\n", p, WIFEXITED(status), WEXITSTATUS(status));
 				break;
 			}
 		}
 		if (!handled) {
-			printf("Did not correctly handle child %d\n", p);
+			fprintf(stderr, "Did not correctly handle child %d\n", p);
 		}
 	}
 }
@@ -319,6 +332,7 @@ void proc_exit() {
 int main(int argc, char * const argv[]) {
 
 
+	g_options.fp = stderr;
 	if (readopts(argc, argv, &g_options)) {
 		return EXIT_FAILURE;
 	}
@@ -329,7 +343,7 @@ int main(int argc, char * const argv[]) {
 	for(unsigned int g = 0; g < g_options.groups; ++g) {
 		char *mbuf = mmap(NULL, getpagesize() * g_options.pages, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 		if (mbuf == MAP_FAILED) {
-			printf("Can't mmap in group %d: %s\n", g, strerror(errno));
+			fprintf(stderr, "Can't mmap in group %d: %s\n", g, strerror(errno));
 			return EXIT_FAILURE;
 		}
 		/* touch all the pages */
@@ -353,7 +367,7 @@ int main(int argc, char * const argv[]) {
 				struct record rec;
 				ssize_t rv = read(kids[i].pipe, &rec, sizeof(rec));
 				if (rv < (ssize_t)sizeof(rec)) {
-					printf("got %zd of %lu bytes, errstr = %s\n", rv, sizeof(rec), strerror(errno));
+					fprintf(stderr, "got %zd of %lu bytes, errstr = %s\n", rv, sizeof(rec), strerror(errno));
 					return EXIT_FAILURE;
 				}
 #if 0
@@ -366,11 +380,11 @@ int main(int argc, char * const argv[]) {
 				//printf("parent read child %d\n", i);
 			}
 		}
-		printf("For window [%d,%d) got %.1f creations per second and %.1f switches per second\n",
-		       w*g_options.seconds, (w+1)*g_options.seconds - 1,
-		       (1.0*sum.creations) / (1.0 *g_options.seconds), (1.0*sum.switches) / (1.0*g_options.seconds));
+		fprintf(g_options.fp, "For window [%d,%d) got %.1f creations per second and %.1f switches per second\n",
+		        w*g_options.seconds, (w+1)*g_options.seconds - 1,
+		        (1.0*sum.creations) / (1.0 *g_options.seconds), (1.0*sum.switches) / (1.0*g_options.seconds));
 	}
 
-
+	fclose(g_options.fp);
 	return 0;
 }
