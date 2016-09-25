@@ -317,19 +317,16 @@ void do_fork(struct child_data *kid) {
 static struct child_data *kids;
 
 void proc_exit() {
-	int handled = 0;
 	int status;
-	pid_t p = wait(&status);
-	for(unsigned int i = 0; i < g_options.children; ++i) {
-		if (kids[i].pid == p) {
-			kids[i].pid = -1;
-			close(kids[i].pipe);
-			handled = 1;
-			fprintf(stderr, "child %d exited(%d) with status %d\n", p, WIFEXITED(status), WEXITSTATUS(status));
+	for(int remaining = g_options.children; remaining; remaining--) {
+		pid_t p = wait(&status);
+		for(unsigned int i = 0; i < g_options.children; ++i) {
+			if (kids[i].pid == p) {
+				kids[i].pid = -1;
+				close(kids[i].pipe);
+				fprintf(stderr, "child %d exited(%d) with status %d\n", p, WIFEXITED(status), WEXITSTATUS(status));
+			}
 		}
-	}
-	if (!handled) {
-		fprintf(stderr, "Did not correctly handle child %d\n", p);
 	}
 }
 
