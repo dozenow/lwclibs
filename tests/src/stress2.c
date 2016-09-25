@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <string.h>
+#include <signal.h>
 #include <strings.h>
 #include <stdlib.h>
 #include <time.h>
@@ -316,22 +317,19 @@ void do_fork(struct child_data *kid) {
 static struct child_data *kids;
 
 void proc_exit() {
-	for(;;) {
-		int handled = 0;
-		int status;
-		pid_t p = wait3(&status, WNOHANG, NULL);
-		for(unsigned int i = 0; i < g_options.children; ++i) {
-			if (kids[i].pid == p) {
-				kids[i].pid = -1;
-				close(kids[i].pipe);
-				handled = 1;
-				fprintf(stderr, "child %d exited(%d) with status %d\n", p, WIFEXITED(status), WEXITSTATUS(status));
-				break;
-			}
+	int handled = 0;
+	int status;
+	pid_t p = wait(&status);
+	for(unsigned int i = 0; i < g_options.children; ++i) {
+		if (kids[i].pid == p) {
+			kids[i].pid = -1;
+			close(kids[i].pipe);
+			handled = 1;
+			fprintf(stderr, "child %d exited(%d) with status %d\n", p, WIFEXITED(status), WEXITSTATUS(status));
 		}
-		if (!handled) {
-			fprintf(stderr, "Did not correctly handle child %d\n", p);
-		}
+	}
+	if (!handled) {
+		fprintf(stderr, "Did not correctly handle child %d\n", p);
 	}
 }
 
@@ -391,6 +389,10 @@ int main(int argc, char * const argv[]) {
 		        (1.0*sum.creations) / (1.0 *g_options.seconds), (1.0*sum.switches) / (1.0*g_options.seconds));
 	}
 
+	signal(SIGHUP, SIG_IGN);
+	kill(0, SIGHUP);
+	signal(SIGHUP, SIG_DFL);
+	proc_exit();
 	fclose(g_options.fp);
 	return 0;
 }
