@@ -1,0 +1,8 @@
+rm -f tmpfiles/*.txt
+cd IOTest
+./build
+cd ..
+cd jrefmon
+make clean; make
+cd ..
+java -Djava.library.path=./jrefmon/ -cp IOTest/bin IOTest

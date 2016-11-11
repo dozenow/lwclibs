@@ -1,0 +1,5 @@
+ant
+cd bin
+javah IOTest
+mv IOTest.h ../../jrefmon/
+cd ..
