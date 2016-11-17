@@ -17,21 +17,8 @@ int Lwccreate(struct lwc_resource_specifier *resources, int numr, int *src, regi
 	return rv;
 }
 
-int Lwcsuspendswitch(int to, register_t *to_args, int num_toargs, int *src, register_t *src_args, int *num_args) {
-	int rv = lwcsuspendswitch(to, to_args, num_toargs, src, src_args, num_args);
-	if (rv == LWC_FAILED) {
-		fprintf(stderr, "lwcsuspend got error %d: %s\n", errno, strerror(errno));
-#ifdef __cplusplus
-		throw strerror(errno);
-#else
-		abort();
-#endif
-	}
-	return rv;
-}
-
-int Lwcdiscardswitch(int to, register_t *to_arg, int num_toargs) {
-	int rv = lwcdiscardswitch(to, to_arg, num_toargs);
+int Lwcswitch(int to, register_t *to_args, int num_toargs, int *src, register_t *src_args, int *num_args) {
+	int rv = lwcswitch(to, to_args, num_toargs, src, src_args, num_args);
 	if (rv == LWC_FAILED) {
 		fprintf(stderr, "lwcsuspend got error %d: %s\n", errno, strerror(errno));
 #ifdef __cplusplus
