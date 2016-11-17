@@ -22,6 +22,7 @@ static int child_lwc = 1;
 
 
 #define strerror(x) (sys_errlist[x])
+//#define fprintf(...)
 
 void parent_loop() {
 
@@ -103,7 +104,7 @@ int main() {
 
 	sbuf[parent_lwc] = lwcgetlwc();
 
-	int new_lwc = lwccreate(specs, 0, NULL, NULL, NULL, LWC_TRAP_SYSCALL);
+	int new_lwc = lwccreate(specs, 0, NULL, NULL, NULL, LWC_SUSPEND_ONLY | LWC_TRAP_SYSCALL);
 	if (new_lwc >= 0) {
 		sbuf[child_lwc] = new_lwc;
 		parent_loop();
@@ -111,6 +112,16 @@ int main() {
 		perror("LWC failed\n");
 		return EXIT_FAILURE;
 	}
+
+	int pid = fork();
+	if (pid > 0) {
+		/* in parent */
+		sleep(10);
+	} else {
+		// make sure parent gets cleaned up 
+		//sleep(1);
+	}
+
 
 	/* now in child */
 
@@ -120,7 +131,6 @@ int main() {
 	}
 
 	int ret;
-#if 0	
 	char *path = sbuf + 10;
 	strcpy(path, "/etc/passwd");
 	struct stat *sb = (struct stat *) (sbuf + 100);
@@ -139,12 +149,11 @@ int main() {
 	fprintf(stderr, "read returned %zd\n", read(ret, buf, sizeof(buf)-1));
 	fprintf(stderr, "errstr is %s\n", strerror(errno));
 	//fprintf(stderr, "buf contains %s\n", buf);
-#endif
+
 	size_t frames = 42;
 	size_t oldlen = sizeof(frames);
 	ret = sysctlbyname("kern.lwc.max_frames", &frames, &oldlen, NULL, 0);
 	fprintf(stderr, "return of sysctlbyname is %d and frames is now set to %zd. errstr(%d)=%s\n", ret, frames, errno, strerror(errno));
-	
-	
+
 	return EXIT_SUCCESS;
 }

@@ -150,8 +150,20 @@ struct record {
 
 char **g_bufs = NULL;
 
+static int g_go = 0;
+
+void handler(int s) {
+	if (s == SIGUSR1) {
+		g_go = 1;
+	} else {
+		for(;;)
+			sleep(60);
+	}
+}
 
 int do_child(int pipe, const struct opts *opts) {
+
+	//signal(SIGHUP, handler);
 
 
 	for(unsigned int g = 0; g < opts->groups; ++g) {
@@ -198,10 +210,10 @@ int do_child(int pipe, const struct opts *opts) {
 	for(;;) {
 
 		/* this is just to reduce measurement overhead on this. didn't want to mess with rtdsc */
-		check_time = (check_time + 1) % 1;//503;
+		check_time = 0;
 		if (check_time == 0) {
-			time_t cur = time(NULL);
-			if (cur - last >= opts->seconds) {
+			time_t cur = 0;//time(NULL);
+			if (creations > 10000 /* cur - last >= opts->seconds */) {
 				struct record rec = {
 					.creations = creations,
 					.switches = switches
@@ -256,19 +268,19 @@ int do_child(int pipe, const struct opts *opts) {
 
 			} else if (new_snap == LWC_SWITCHED) {
 
-
-				for(;;) { /* child loop */
-					if (opts->groups_to_dirty + opts->pages_to_dirty > 0) {
-						for(unsigned int g = 0; g < opts->groups; ++g) {
-							for(unsigned int p = 0; p < opts->pages; ++p) {
-								if (g < opts->groups_to_dirty && p < opts->pages_to_dirty) {
-									g_bufs[g][p*4096] = 1;
-								} else {
-									sum += g_bufs[g][p*4096];
-								}
-							}
+				//if (opts->groups_to_dirty + opts->pages_to_dirty > 0) {
+				for(unsigned int g = 0; g < opts->groups; ++g) {
+					for(unsigned int p = 0; p < opts->pages; ++p) {
+						if (g < opts->groups_to_dirty && p < opts->pages_to_dirty) {
+							g_bufs[g][p*4096] = 1;
+						} else {
+							sum += g_bufs[g][p*4096];
 						}
 					}
+					//}
+				}
+
+				for(;;) { /* child loop */
 
 					if (opts->discard && (lwcdiscardswitch(parent_snap, NULL, 0) == LWC_FAILED)) {
 						printf("discardswitch in child failed: %s\n", strerror(errno));
@@ -301,6 +313,9 @@ void do_fork(struct child_data *kid) {
 
 	pid_t res = fork();
 	if (res > 0) {
+		for(unsigned int g = 0; g < g_options.groups; ++g) {
+			munmap(g_bufs[g], getpagesize() * g_options.pages);
+		}
 		kid->pid = res;
 		kid->pipe = desc[0];
 		close(desc[1]);
@@ -332,6 +347,8 @@ void proc_exit() {
 
 int main(int argc, char * const argv[]) {
 
+	signal(SIGUSR1, handler);
+
 
 	g_options.fp = stderr;
 	if (readopts(argc, argv, &g_options)) {
@@ -347,10 +364,21 @@ int main(int argc, char * const argv[]) {
 			fprintf(stderr, "Can't mmap in group %d: %s\n", g, strerror(errno));
 			return EXIT_FAILURE;
 		}
+		madvise(mbuf, getpagesize() * g_options.pages, MADV_RANDOM);
 		/* touch all the pages */
 		bzero(mbuf, getpagesize() * g_options.pages);
 		g_bufs[g] = mbuf;
 	}
+
+#if 0
+	printf("Awaiting SIGUSR1 before proceeding\n");
+	while(!g_go) {
+		sleep(1);
+	}
+	printf("Proceeding...\n");
+#endif
+
+
 
 	for(unsigned int i = 0; i < g_options.children; ++i) {
 

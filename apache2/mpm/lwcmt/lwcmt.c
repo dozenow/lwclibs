@@ -31,7 +31,10 @@
 #include "apr_proc_mutex.h"
 #include "apr_poll.h"
 
+#include <sys/mman.h>
 #include <stdlib.h>
+
+#include "lwc.h"
 
 #define APR_WANT_STRFUNC
 #include "apr_want.h"
@@ -622,6 +625,8 @@ static void process_socket(apr_thread_t *thd, apr_pool_t *p, apr_socket_t *sock,
     long conn_id = ID_FROM_CHILD_THREAD(my_child_num, my_thread_num);
     ap_sb_handle_t *sbh;
 
+ 
+
     ap_create_sb_handle(&sbh, p, my_child_num, my_thread_num);
 
     current_conn = ap_run_create_connection(p, ap_server_conf, sock,
@@ -923,6 +928,13 @@ static void * APR_THREAD_FUNC worker_thread(apr_thread_t *thd, void * dummy)
     apr_status_t rv;
     int is_idle = 0;
 
+
+    int snap_fd = -1;
+    int snap_rv = -1;
+    int args = 1;
+
+
+
     free(ti);
 
     ap_scoreboard_image->servers[process_slot][thread_slot].pid = ap_my_pid;
@@ -951,6 +963,39 @@ static void * APR_THREAD_FUNC worker_thread(apr_thread_t *thd, void * dummy)
 
         ap_update_child_status_from_indexes(process_slot, thread_slot, SERVER_READY, NULL);
 worker_pop:
+
+        
+
+
+        if (snap_fd < 0) {
+	        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, ap_server_conf, 
+	                     "Creating lwc for proc %d, tid %d", process_slot, thread_slot);
+
+	        struct lwc_resource_specifier specs[1];
+	        specs[0].flags = LWC_RESOURCE_FILES | LWC_RESOURCE_SHARE;
+	        specs[0].sub.descriptors.from = specs[0].sub.descriptors.to = -1;
+
+	        int snap_rv = lwccreate(specs, 1, NULL, &snap_fd, &args, 0);
+	        if (snap_rv == LWC_SWITCHED) {
+		        /* snap_fd passed back in with the discard */
+		        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, ap_server_conf, 
+		                     "switched into lwc for proc %d, tid %d", process_slot, thread_slot);
+	        } else if (snap_rv >= 0) {
+		        snap_fd = snap_rv;
+	        } else {
+		        ap_log_error(APLOG_MARK, APLOG_EMERG, errno, ap_server_conf, "could not create lwc");
+		        clean_child_exit(APEXIT_CHILDSICK);
+	        }
+
+        } else {
+	        lwcdiscardswitch(snap_fd, &snap_fd, 1);
+	        ap_log_error(APLOG_MARK, APLOG_EMERG, errno, ap_server_conf, APLOGNO(00157)
+	                     "Hit unreachable point, snap failed");
+	        clean_child_exit(APEXIT_CHILDSICK);
+        }
+
+
+
         if (workers_may_exit) {
             break;
         }
@@ -1053,9 +1098,19 @@ static void * APR_THREAD_FUNC start_threads(apr_thread_t *thd, void *dummy)
     int loops;
     int prev_threads_created;
 
+
+    int *sbuf = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_ANON | MAP_SHARED, -1, 0);
+    if (sbuf == MAP_FAILED) {
+	    perror("Can't mmap. So many tears\n");
+	    return 0;
+    }
+
+
     /* We must create the fd queues before we start up the listener
      * and worker threads. */
-    worker_queue = apr_pcalloc(pchild, sizeof(*worker_queue));
+    //worker_queue = apr_pcalloc(pchild, sizeof(*worker_queue));
+    worker_queue = (fd_queue_t*) sbuf;
+
     rv = ap_queue_init(worker_queue, threads_per_child, pchild);
     if (rv != APR_SUCCESS) {
         ap_log_error(APLOG_MARK, APLOG_ALERT, rv, ap_server_conf,

@@ -8,7 +8,6 @@
 .text
 
 .globl lwccreate
-
 lwccreate:
    push   %rbp
    mov    %rsp,%rbp
@@ -29,8 +28,8 @@ out_c:
    pop    %rbp
    retq
     
-.globl lwcsuspendswitch
-lwcsuspendswitch:  
+.globl lwcswitch
+lwcswitch:  
    push   %rbp
    mov    %rsp,%rbp
     /*
@@ -50,24 +49,6 @@ out_swx:
    pop    %rbp
    retq
 
-.globl lwcdiscardswitch
-lwcdiscardswitch:  
-   push   %rbp
-   mov    %rsp,%rbp
-    /*
-   mov    %rdi,-0x10(%rbp)
-   mov    %esi,-0x14(%rbp)
-   mov    %rdx,-0x20(%rbp)
-   */
-   mov    $552,%eax
-   mov    %rcx,%r10
-   syscall
-   jnc out_dswx
-   DO_ERR
-out_dswx:
-   pop    %rbp
-   retq
-
 .globl lwcoverlay
 lwcoverlay: 
    push   %rbp
@@ -77,7 +58,7 @@ lwcoverlay:
    mov    %esi,-0x14(%rbp)
    mov    %rdx,-0x20(%rbp)
    */
-   mov    $553,%eax
+   mov    $552,%eax
    mov    %rcx,%r10
    syscall
    jnc out_ovl
@@ -95,7 +76,7 @@ lwcrestrict:
    mov    %esi,-0x14(%rbp)
    mov    %rdx,-0x20(%rbp)
    */
-   mov    $554,%eax
+   mov    $553,%eax
    mov    %rcx,%r10
    syscall
    jnc out_res
@@ -110,7 +91,7 @@ lwcsyscall:
    push   %rbp
    mov    %rsp,%rbp
    /* four arguments */
-   mov    $555,%eax
+   mov    $554,%eax
    mov    %rcx,%r10
    syscall
    jnc out_lwsy
@@ -120,6 +101,21 @@ out_lwsy:
    retq
 
    
+.globl lwcgetlwc
+lwcgetlwc: 
+   push   %rbp
+   mov    %rsp,%rbp
+   /* one argument */
+   mov    $555,%eax
+   mov    %rcx,%r10
+   syscall
+   jnc out_lwget
+   DO_ERR
+out_lwget:  
+   pop    %rbp
+   retq
+
+
 .globl lwcclose
 lwcclose: 
    push   %rbp
@@ -134,16 +130,3 @@ out_lwsc:
    pop    %rbp
    retq
 
-.globl lwcgetlwc
-lwcgetlwc: 
-   push   %rbp
-   mov    %rsp,%rbp
-   /* one argument */
-   mov    $557,%eax
-   mov    %rcx,%r10
-   syscall
-   jnc out_lwget
-   DO_ERR
-out_lwget:  
-   pop    %rbp
-   retq

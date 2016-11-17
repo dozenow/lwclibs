@@ -9,20 +9,21 @@
    /* #pragma D option aggrate=0 */
    /*#pragma D option cleanrate=50Hz */
 
-profile:::profile-999
-/execname == "switcher_pthread"/
+
+profile:::profile-499
+/pid == $1/
 {
-	@[stack(), ustack(100,100), 1] = sum(1000);
+	@[stack(), ustack(100,100), 1] = sum(500);
 }
 
 sched:::off-cpu
-/execname == "switcher_pthread"/
+/pid == $1/
 {
 	self->start = timestamp;
 }
 
 sched:::on-cpu
-/execname == "switcher_pthread" && (this->start = self->start)/
+/(this->start = self->start) && pid == $1/
 {
 	this->delta = (timestamp - this->start) / 1000;
 	@[stack(), ustack(100,100), 0] = sum(this->delta);
@@ -30,9 +31,7 @@ sched:::on-cpu
 }
 
 
-syscall::nanosleep:entry /execname == "switcher_pthread"/ {
+END {
 	normalize(@, 1000);
 	printa("%k %k oncpu:%d ms:%@d\n", @);
-	trunc(@);
-	exit(0);
 }

@@ -126,6 +126,14 @@ lwc:kern_lwc:sharefd:syslwc {
 	printf("current fd shared with lwc 0x%lx", arg0);
 }
 
+fbt:kernel:lwctrapto:entry {
+	printf("----entering lwc trap to----");
+}
+
+fbt:kernel:lwctrapto:return {
+	printf("----exiting lwc trap to----");
+}
+
 lwc:kern_lwc:forkcred:syslwc {
 	printf("current cred forked into lwc 0x%lx, proc uid=%d", arg0, uid);
 }
