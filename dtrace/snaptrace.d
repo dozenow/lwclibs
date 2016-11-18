@@ -20,13 +20,9 @@ syscall::lwccreate:return {
 	printf("lwccreate rv = %d", arg1);
 }
 
-syscall:freebsd:lwcsuspendswitch:entry {
+syscall:freebsd:lwcswitch:entry {
 	star5 = arg5 ? (int) copyin(arg5, 4) : -1;
-	printf("lwcsuspendswitch(%d, 0x%lx, %d, 0x%lx, 0x%lx, 0x%lx(%d))", arg0, arg1, arg2, arg3, arg4, arg5, star5);
-}
-
-syscall:freebsd:lwcdiscardswitch:entry {
-	printf("lwcdiscardswitch(%d, 0x%lx, %d)", arg0, arg1, arg2);
+	printf("lwcswitch(%d, 0x%lx, %d, 0x%lx, 0x%lx, 0x%lx(%d))", arg0, arg1, arg2, arg3, arg4, arg5, star5);
 }
 
 syscall::lwcoverlay:entry {
@@ -37,21 +33,13 @@ syscall::lwcoverlay:return {
 	printf("lwcoverlay rv = %d", arg1);
 }
 
-syscall::lwcsuspendswitch:return {
-	printf("lwcsuspendswitch rv = %d", arg1);
+syscall::lwcswitch:return {
+	printf("lwcswitch rv = %d", arg1);
 }
 
-
-syscall::lwcdiscardswitch:return {
-	printf("lwcdiscardswitch rv = %d", arg1);
-}
 
 lwc:kern_lwc:suspendswitch:syslwc {
 	printf("suspendswitch from 0x%lx to 0x%lx", arg0, arg1);
-}
-
-lwc:kern_lwc:discardswitch:syslwc {
-	printf("discardswitch from 0x%lx to 0x%lx", arg0, arg1);
 }
 
 lwc:kern_lwc:alloc:syslwc {
