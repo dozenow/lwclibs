@@ -35,7 +35,7 @@ rm_loop (int appLwc)
 	memset (src_arg, 0, sizeof(void*) * NUM_SWITCH_ARGS);
 	memset (ret_args, 0, sizeof(void*) * NUM_SWITCH_ARGS);
 
-	if (lwcsuspendswitch (appLwc, NULL, 0, &src_switch, &src_arg[0],
+	if (lwcswitch (appLwc, NULL, 0, &src_switch, &src_arg[0],
 			&src_num) == LWC_FAILED)
 	{
 		perror ("LWC suspend in parent failed");
@@ -73,7 +73,7 @@ rm_loop (int appLwc)
 
 		memset (src_arg, 0, sizeof(void*) * NUM_SWITCH_ARGS);
 		src_num = NUM_SWITCH_ARGS - 1;
-		if (lwcsuspendswitch (ret_switch, ret_args, ret_num, &src_switch, src_arg,
+		if (lwcswitch (ret_switch, ret_args, ret_num, &src_switch, src_arg,
 			    &src_num) == LWC_FAILED)
 		{
 			perror ("LWC failed in suspend");
@@ -94,7 +94,7 @@ create_ref_mon ()
 	specs[0].sub.descriptors.from = specs[0].sub.descriptors.to = -1;
 
 	/* create refmon context */
-	ret = Lwccreate (specs, 1, NULL, NULL, 0, LWC_SUSPEND_ONLY | LWC_TRAP_SYSCALL);
+	ret = Lwccreate (specs, 1, NULL, NULL, 0, LWC_TRAP_SYSCALL);
 
 	if (ret >= 0)
 	{
