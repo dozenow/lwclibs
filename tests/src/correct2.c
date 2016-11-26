@@ -3,83 +3,173 @@
 #include <sys/procdesc.h>
 #include <sys/mman.h>
 #include <string.h>
-#include <errno.h>
 #include <strings.h>
 #include <stdlib.h>
-#include <stdlib.h>
+#include <errno.h>
 #include <time.h>
 
+#include <pthread.h>
+#include <stdatomic.h>
+
+#include "shared_malloc.h"
 #include "lwc.h"
+
+
+
+/* global crud */
+static struct sh_memory_pool *g_pool;
+static int *g_lwcs;
+static atomic_int *g_cnt;
+
+#define N_THR 4
+#define N_LWCS 5
+#define POOL_SIZE (getpagesize() * 10)
+
+void * Smalloc(size_t s) {
+	char * ret = sh_malloc(s, g_pool);
+	if (!ret) abort();
+	return ret;
+}
+
+void * thr_start(void * arg) {
+	int id = (size_t) arg;
+
+	int *count = Smalloc(sizeof(*count));
+
+	*count = 0;
+
+	atomic_fetch_add(g_cnt, 1);
+
+	for(int x = atomic_load(g_cnt); x < N_THR+1; x = atomic_load(g_cnt)) {
+		//fprintf(stderr, "x =%d\n", x);
+		usleep(100);
+	}
+
+	*count += 1;
+	fprintf(stderr, "thread %d(0x%ld) passed fake barrier for the %d time in lwc %d\n", id, (unsigned long) pthread_self(), *count, lwcgetlwc());
+	if (*count == N_LWCS) {
+		fprintf(stderr, "%d switching to g_lwcs[0]=%d\n", id, g_lwcs[0]);
+		if (Lwcswitch(g_lwcs[0], NULL, 0, NULL, NULL, 0) == LWC_FAILED) {
+			fprintf(stderr, "switch failed: %s\n", strerror(errno));
+			abort();
+		}
+	}
+
+	/* this thread should be at the barrier for every lwc created */
+	for(int i = 1; i <= N_LWCS; ++i) {
+		if (g_lwcs[i] != lwcgetlwc()) {
+			fprintf(stderr, "il %d switching to g_lwcs[%d]=%d\n", id, i, g_lwcs[i]);
+			if (Lwcswitch(g_lwcs[i], NULL, 0, NULL, NULL, 0) == LWC_FAILED) {
+				fprintf(stderr, "switch failed: %s\n", strerror(errno));
+				abort();
+			}
+
+			if (lwcgetlwc() == g_lwcs[0]) {
+				fprintf(stderr, "%d exiting\n", id);
+				return arg;
+			}
+		}
+	}
+
+	fprintf(stderr, "should not get here\n");
+	return NULL;
+
+}
+
+
+void init_globals() {
+	char *sbuf = mmap(NULL, POOL_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_SHARED, -1, 0);
+	if (sbuf == MAP_FAILED) {
+		perror("Can't mmap. So many tears\n");
+		abort();
+	}
+
+	g_pool = init_sh_mempool(sbuf, POOL_SIZE);
+
+	g_cnt = Smalloc(sizeof(*g_cnt));
+	*g_cnt = 0;
+	g_lwcs = Smalloc(sizeof(*g_lwcs)*(N_LWCS+1));
+}
 
 int main() {
 
-	char *mbuf = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-	if (mbuf == MAP_FAILED) {
-		perror("Can't mmap. So many tears\n");
-		return 0;
+	printf("Hit enter for go time\n");
+	getchar();
+
+	init_globals();
+
+
+
+	/* do out of smalloc in case it gets odd with isolated address spaces */
+	pthread_t *thrs = Smalloc(sizeof(*thrs) * (N_THR+1)); /* one index for consistency with lws */
+	for(int i = 1; i <= N_THR; ++i) {
+		int ret = pthread_create(&thrs[i], NULL, thr_start, (void*) (size_t)i);
+		if (ret) {
+			fprintf(stderr, "pthread_create failed: %s\n", strerror(errno));
+		}
 	}
 
-	bzero(mbuf, 4096);
 
-	int *sbuf = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_ANON | MAP_SHARED, -1, 0);
-	if (sbuf == MAP_FAILED) {
-		perror("Can't mmap. So many tears\n");
-		return 0;
+	
+	struct lwc_resource_specifier specs[1];
+
+	/* share the file table */
+	specs[0].flags = LWC_RESOURCE_FILES | LWC_RESOURCE_SHARE;
+	specs[0].sub.descriptors.from = specs[0].sub.descriptors.to = -1;
+
+	g_lwcs[0] = lwcgetlwc();
+
+	/* okay all lwcs are created. spin for all to startup */
+	while(atomic_load(g_cnt) < N_THR) {
+		usleep(10);
 	}
 
-	char stackbuf[4096];
+	usleep(10); //technically can race, but just a dumb test. 
+	fprintf(stderr, "everyone at their barrier, creating lwcs\n");
 
-	memset(mbuf, 1, 4096);
-	memset(stackbuf, 1, 4096);
 
-	sbuf[0] = 42;
-	sbuf[1] = 1;
-	int src = -1;
-	int new_lwc;
+	int src;
+	for(int i = 1; i <= N_LWCS; ++i) {
+		int new_snap = lwccreate(specs, 1, &src, 0, 0, 0);
 
-	void *src_arg[10];
-	int num_args = 10;
-	new_lwc = lwccreate(NULL, 0, &src, src_arg, &num_args, 0);
+		if (new_snap >= 0) { // created a lwc
+			g_lwcs[i] = new_snap;
+		} else if (new_snap == LWC_SWITCHED) {
+			fprintf(stderr, "switched into lwc at i = %d, lwc is %d from %d\n", i, lwcgetlwc(), src);
+			return 10; //not supposed to happen in this test.
+			
 
-	if (new_lwc >= 0) { // created a lwc
-		mbuf[0] = 1;
-		sbuf[0] = new_lwc;
-		register_t arg[10] = {42 };
-		int x = lwcdiscardswitch(sbuf[0], arg, 1);
-		printf("Should not see this. new snap is %d, x is %d\n", new_lwc, x);
-		return EXIT_FAILURE;
-	} else if (new_lwc == LWC_SWITCHED) {
-		printf("src is %d and src_arg = (0x%lx) %d and num_args = %d\n", src, (unsigned long) src_arg, (int) src_arg[0], num_args);
-		if (!(mbuf[10] == stackbuf[10] == 1)) {
-			fprintf(stderr, "mbuf[10](%d) != stackbuf[10](%d)\n", mbuf[10], stackbuf[10]);
-			if (sbuf[1] != 100) {
-				sbuf[1] = 100;
-				register_t arg[10] = {43 };
-				printf("Sending 0x%lx (%d)\n", (unsigned long)arg, (int) arg[0]);
-				lwcdiscardswitch(sbuf[0], arg, 1);
-			}
-			return EXIT_FAILURE;
+			Lwcswitch(g_lwcs[(i+1) % N_LWCS], NULL, 0, NULL, NULL, 0);
+			fprintf(stderr, "should not have reached this point\n");
+			return 8;
+
+		} else if (new_snap == LWC_FAILED) {
+			fprintf(stderr, "error doing snap create / jump to snap create\n");
+			return 3;
+		} else {
+			fprintf(stderr, "unexpected return value from create: %d\n", new_snap);
+			return 4;
 		}
-
-		if (stackbuf[10] != 1) {
-			fprintf(stderr, "stack changed? sbuf[10] = %d\n", stackbuf[10]);
-			return EXIT_FAILURE;
-		}
-
-		sbuf[2]++;
-
-		mbuf[0]++;
-		memset(mbuf+4, mbuf[0], 4092);
-		memset(stackbuf, mbuf[0], 4096);
-
-		if (sbuf[2] < 10) {
-			register_t arg[10] = {44 };
-			lwcdiscardswitch(sbuf[0], arg, 1);
-		}
-	} else {
-		fprintf(stderr, "switch failed: %s\n", strerror(errno));
-		return EXIT_FAILURE;
 	}
 
-	return EXIT_SUCCESS;
+
+	/* okay, unleash the threads */
+	atomic_fetch_add(g_cnt, 1);
+	for(;atomic_load(g_cnt) < N_THR+1;) {
+		usleep(10);
+	}
+
+	fprintf(stderr, "awaiting join in parent\n");
+
+	for(int i = 1; i <= N_THR; ++i) {
+		void *val;
+		int rv;
+		if ((rv = pthread_join(thrs[i], &val)) != 0) {
+			fprintf(stderr, "pthread_join failed on thr %d with rv %d: %s\n", i, rv, strerror(errno));
+			break;
+		}
+	}
+
+	return 0;
+
 }
