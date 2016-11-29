@@ -1,0 +1,8 @@
+rm -f tmpfiles/*.txt
+cd IOTest
+./build
+cd ..
+cd jrefmon
+make clean; make
+cd ..
+sudo LD_PRELOAD=/home/elnikety/workspace/snap/jvmrefmon/jrefmon/loader.so java -cp IOTest/bin IOTest_PRELOAD

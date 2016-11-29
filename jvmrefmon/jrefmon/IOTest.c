@@ -58,12 +58,12 @@ rm_loop (int appLwc)
 		void *arg3 = (void *) ((long long*) src_arg)[3];
 		void *arg4 = (void *) ((long long*) src_arg)[4];
 
-		printf ("syscall %d (arg1 %p) (arg2 %p) (arg3 %p) (arg4 %p)\n", 
-			syscall_num, arg1, arg2, arg3, arg4);
+//		printf ("syscall %d (arg1 %p) (arg2 %p) (arg3 %p) (arg4 %p)\n", 
+//			syscall_num, arg1, arg2, arg3, arg4);
 
 		do_lwc_syscall (src_switch, src_arg, &ret_value, &ret_err);
 
-		printf("return (%d), err (%d)\n", ret_value, ret_err);
+//		printf("return (%d), err (%d)\n", ret_value, ret_err);
 
 		ret_args[0] = ret_err;
 		ret_args[1] = (int) ret_value;
@@ -95,6 +95,9 @@ create_ref_mon ()
 
 	/* create refmon context */
 	ret = Lwccreate (specs, 1, NULL, NULL, 0, LWC_TRAP_SYSCALL);
+
+	// this is to mainly produce the crash with LD_PRELOAD
+	return 0;
 
 	if (ret >= 0)
 	{
