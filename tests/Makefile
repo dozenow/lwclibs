@@ -2,7 +2,7 @@ include ../Makefile.inc
 
 VPATH=.:src:include
 DEPFILE = .depends
-TARGETS=correct1 correct2 close fork #nonshared correct_shared overlay_mem overlay_file overlay_cred correct3 correct2 syscall trap stress1 stress2 lwcgetlwc stress3 close
+TARGETS=correct1 correct2 close fork fork_mt #nonshared correct_shared overlay_mem overlay_file overlay_cred correct3 correct2 syscall trap stress1 stress2 lwcgetlwc stress3 close
 
 STATICLWC=../libs/liblwc.a
 LIBDIRS = -L../libs/
@@ -60,6 +60,9 @@ ssl_snap_server: $(SSS_DEPS) $(LIBS)
 SSC_DEPS=src/ssl_snap_client.o src/snap_ssl.o 
 ssl_snap_client: $(SSC_DEPS) $(LIBS)
 	$(CXX) $(CXXFLAGS) $(SSC_DEPS) -o $@ -lssl -lcrypto $(LIBDIRS) $(LIBS)
+
+fork_mt: src/fork_mt.o $(LIBS)
+	$(CC) $(CFLAGS) src/fork_mt.o -lpthread $(LIBDIRS) -o $@ $(LIBS) 
 
 fork: src/fork.c $(LIBS)
 	$(CC) $(CFLAGS) src/fork.c $(LIBDIRS) $(LIBS) -o $@
