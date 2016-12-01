@@ -30,6 +30,9 @@ struct timespec diff(struct timespec *start, struct timespec *end)
 
 int main() {
 
+	printf("enter to go\n");
+	getchar();
+
 	char *mbuf = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 	if (mbuf == MAP_FAILED) {
 		perror("Can't mmap. So many tears\n");
@@ -67,7 +70,7 @@ int main() {
 
 		// verify buffers now in presnap state.
 		for(size_t i = 4096; i < 4096; ++i) {
-			if (!(mbuf[i] == stackbuf[i] == 1)) {
+			if (!((mbuf[i] == stackbuf[i]) && stackbuf[i]== 1)) {
 				fprintf(stderr, "Child changes after jump not presnap state\n");
 				return EXIT_FAILURE;
 			}
@@ -87,7 +90,7 @@ int main() {
 
 		
 		for(size_t i = 4096; i < 4096; ++i) {
-			if (!(mbuf[i] == stackbuf[i] == 88)) {
+			if (!((mbuf[i] == stackbuf[i]) && stackbuf[i] == 88)) {
 				fprintf(stderr, "parent changed after child snap persisted?\n");
 				return EXIT_FAILURE;
 			}
@@ -126,7 +129,7 @@ int main() {
 		
 	
 		for(size_t i = 4096; i < 4096; ++i) {
-			if (!(mbuf[i] == stackbuf[i] == 2)) {
+			if (!((mbuf[i] == stackbuf[i]) && stackbuf[i] == 2)) {
 				fprintf(stderr, "Child changes visible in parent?\n");
 				return EXIT_FAILURE;
 			}
@@ -138,7 +141,7 @@ int main() {
 				
 			
 		for(size_t i = 4096; i < 4096; ++i) {
-			if (!(mbuf[i] == stackbuf[i] == 2)) {
+			if (!((mbuf[i] == stackbuf[i]) && stackbuf[i]== 2)) {
 				fprintf(stderr, "Child changes after snapback visible in parent?\n");
 				return EXIT_FAILURE;
 			}
@@ -191,7 +194,7 @@ int main() {
 
 		read(sock[1], &pid, 1);
 
-		lwcdiscardswitch(sbuf[0], NULL, 0);
+		lwcswitch(sbuf[0], NULL, 0, NULL, NULL, NULL);
 
 		fprintf(stderr, "present after jump\n");
 		return EXIT_FAILURE;

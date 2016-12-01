@@ -2,7 +2,7 @@ include ../Makefile.inc
 
 VPATH=.:src:include
 DEPFILE = .depends
-TARGETS=correct1 correct2 close #fork nonshared correct_shared overlay_mem overlay_file overlay_cred correct3 correct2 syscall trap stress1 stress2 lwcgetlwc stress3 close
+TARGETS=correct1 correct2 close fork #nonshared correct_shared overlay_mem overlay_file overlay_cred correct3 correct2 syscall trap stress1 stress2 lwcgetlwc stress3 close
 
 STATICLWC=../libs/liblwc.a
 LIBDIRS = -L../libs/
