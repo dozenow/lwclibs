@@ -14,16 +14,18 @@ public class IOTest {
 	
 	public native static void lwCConfine();
 	public native static void lwCCleanup();
+	public native static void lwCRegister();
 
 	public static void main(String[] args) throws IOException {
 		
 		//confining after jvm init
 		System.out.println("Confining after init");
 		lwCConfine();
-		
+		lwCRegister();
+
 		//create 100 temporary files
 		for (int i = 0; i < 10000; i++) {
-			BufferedWriter out = new BufferedWriter(new FileWriter("tmpfiles/" + i + ".iotest.txt"));
+			BufferedWriter out = new BufferedWriter(new FileWriter("/home/elnikety/workspace/snap/jvmrefmon/tmpfiles/" + i + ".iotest.txt"));
 			out.write("Refmon, are you getting this?");
 			out.close();
 		}

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <assert.h>
 #include <sys/capsicum.h>
 
 #include <lwc.h>
@@ -58,12 +59,12 @@ rm_loop (int appLwc)
 		void *arg3 = (void *) ((long long*) src_arg)[3];
 		void *arg4 = (void *) ((long long*) src_arg)[4];
 
-//		printf ("syscall %d (arg1 %p) (arg2 %p) (arg3 %p) (arg4 %p)\n", 
-//			syscall_num, arg1, arg2, arg3, arg4);
+		printf ("syscall %d (arg1 %p) (arg2 %p) (arg3 %p) (arg4 %p)\n", 
+			syscall_num, arg1, arg2, arg3, arg4);
 
 		do_lwc_syscall (src_switch, src_arg, &ret_value, &ret_err);
 
-//		printf("return (%d), err (%d)\n", ret_value, ret_err);
+		printf("return (%d), err (%d)\n", ret_value, ret_err);
 
 		ret_args[0] = ret_err;
 		ret_args[1] = (int) ret_value;
@@ -82,32 +83,38 @@ rm_loop (int appLwc)
 	}
 }
 
+int refmon_fd = 0;
+
 int
 create_ref_mon ()
 {
 	int ret = 0;
+	int src;
 
 	struct lwc_resource_specifier specs[10];
 
-	/* share the file table */
 	specs[0].flags = LWC_RESOURCE_FILES | LWC_RESOURCE_SHARE;
 	specs[0].sub.descriptors.from = specs[0].sub.descriptors.to = -1;
 
 	/* create refmon context */
-	ret = Lwccreate (specs, 1, NULL, NULL, 0, LWC_TRAP_SYSCALL);
+	ret = Lwccreate (specs, 1, &src, NULL, 0, LWC_TRAP_SYSCALL);
 
-	// this is to mainly produce the crash with LD_PRELOAD
-	return 0;
-
-	if (ret >= 0)
+	if (ret < 0)
 	{
-		printf("Starting refmon, app fd is %d\n", ret);
-		rm_loop (ret);
+		/* here is refmon */
+		printf("Starting refmon, app fd is %d\n", src);
+		rm_loop (src);
 	}
+
+	/* here is app */
+
+	// this code is assumed to execute only once
+	assert (refmon_fd == 0);
+
+	refmon_fd = ret;
 
 	// Sandbox
 	printf("Sandbox app\n");
-	setuid (1001);
 	if (cap_enter () != 0)
 	{
 		perror ("Cap enter");
@@ -116,11 +123,30 @@ create_ref_mon ()
 	return 0;
 }
 
+int
+register_cur_thread ()
+{
+
+        if (lwcswitch (refmon_fd, NULL, 0, NULL, NULL,
+                        NULL) == LWC_FAILED)
+        {
+                perror ("LWC suspend in parent failed");
+                exit (1);
+        }
+
+	return 0;
+}
 
 JNIEXPORT void JNICALL Java_IOTest_lwCConfine
   (JNIEnv *env, jclass c)
 {
 	create_ref_mon ();
+}
+
+JNIEXPORT void JNICALL Java_IOTest_lwCRegister
+  (JNIEnv *env, jclass c)
+{
+        register_cur_thread ();
 }
 
 JNIEXPORT void JNICALL Java_IOTest_lwCCleanup

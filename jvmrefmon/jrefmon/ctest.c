@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 
 #include "IOTest.h"
 
@@ -17,27 +18,13 @@ main (int argc, char *argv[])
 	printf("Confining after init\n");
 
 	Java_IOTest_lwCConfine (NULL, NULL);
-
-/*	for (i = 0; i < 10000; i++)
-	{
-		sprintf(fname, "/home/elnikety/workspace/snap/jvmrefmon/tmpfiles/%d.iotest.txt", i);
-		FILE *fp = fopen(fname, "ab+");
-		if (!fp) {
-			printf("fopen for %s\n", fname);
-			perror("fopen");
-		}
-		assert (fp);
-		int ret = fwrite(str, strlen(str), 1, fp);
-		assert (ret == 1);
-		fclose(fp);
-	}
-*/
-
+	Java_IOTest_lwCRegister (NULL, NULL);
 
 	for (i = 0; i < 10000; i++)
 	{
 		sprintf(fname, "/home/elnikety/workspace/snap/jvmrefmon/tmpfiles/%d.iotest.txt", i);
-		int fd = open(fname, O_CREAT | O_RDWR);
+		int fd = openat(AT_FDCWD, fname, O_WRONLY|O_CREAT|O_TRUNC,0666);
+
 		if (fd <= 0) {
 			printf("open for %s\n", fname);
 			perror("open");
