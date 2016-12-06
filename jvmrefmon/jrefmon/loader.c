@@ -1,4 +1,4 @@
-#define _GNU_SOURCE
+//#define _GNU_SOURCE
 
 #include <stdio.h>
 #include <dlfcn.h>
@@ -6,10 +6,10 @@
 #include <unistd.h>
 #include <stdarg.h>
 
-#include "IOTest.h"
+#include "LWCNI.h"
 
 __attribute__((constructor)) void
 loader_init ()
 {
-	Java_IOTest_lwCConfine (NULL, NULL);
+	Java_LWCNI_lwCConfine (NULL, NULL);
 }

@@ -11,39 +11,34 @@ public class IOTest {
 		System.loadLibrary("testiojni");
 	}
 
-	
-	public native static void lwCConfine();
-	public native static void lwCCleanup();
-	public native static void lwCRegister();
-
 	public static void main(String[] args) throws IOException {
-		
-		//confining after jvm init
-		System.out.println("Confining after init");
-		lwCConfine();
-		lwCRegister();
 
-		//create 100 temporary files
+		// confining after jvm init
+		System.out.println("Confining after init");
+		int rmfd = LWCNI.lwCConfine();
+
+		// create 100 temporary files
 		for (int i = 0; i < 10000; i++) {
-			BufferedWriter out = new BufferedWriter(new FileWriter("/home/elnikety/workspace/snap/jvmrefmon/tmpfiles/" + i + ".iotest.txt"));
+			BufferedWriter out = new BufferedWriter(
+					new FileWriter("/home/elnikety/workspace/snap/jvmrefmon/tmpfiles/" + i + ".iotest.txt"));
 			out.write("Refmon, are you getting this?");
 			out.close();
 		}
-		
-		//read and double check 
+
+		// read and double check
 		for (int i = 0; i < 10000; i++) {
 			BufferedReader in = new BufferedReader(new FileReader("tmpfiles/" + i + ".iotest.txt"));
 			String l = in.readLine();
 			assert (l.compareTo("Refmon, are you getting this?") == 0);
 			in.close();
 		}
-		
-		//remove
+
+		// remove
 		for (int i = 0; i < 10000; i++) {
 			new File("tmpfiles/" + i + ".iotest.txt").delete();
 		}
-		
+
 		System.out.println("Test done!");
-		lwCCleanup();
+		LWCNI.lwCCleanup(rmfd);
 	}
 }

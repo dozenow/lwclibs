@@ -7,7 +7,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-#include "IOTest.h"
+#include "LWCNI.h"
 
 int
 main (int argc, char *argv[])
@@ -17,8 +17,7 @@ main (int argc, char *argv[])
 	char *str = "Refmon, are you getting this?";
 	printf("Confining after init\n");
 
-	Java_IOTest_lwCConfine (NULL, NULL);
-	Java_IOTest_lwCRegister (NULL, NULL);
+	Java_LWCNI_lwCConfine (NULL, NULL);
 
 	for (i = 0; i < 10000; i++)
 	{

@@ -1,5 +1,5 @@
 ant
 cd bin
-javah IOTest
-mv IOTest.h ../../jrefmon/
+javah LWCNI
+mv LWCNI.h ../../jrefmon/
 cd ..

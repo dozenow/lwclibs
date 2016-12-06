@@ -1,12 +1,12 @@
 
-SOURCES=IOTest
+SOURCES=lwcni
 OBJECTS=$(SOURCES:=.o)
 HEADERS=$(SOURCES:=.h)
 INCLUDE_PATHS=-I../../libs/include/ -I/usr/lib/jvm/java-8-oracle/include/ -I/usr/lib/jvm/java-8-oracle/include/linux 
 LIB_PATHS=
-LIBS=
+LIBS= -lpthread
 ARCHIVE=../../libs/liblwc.a
-CFLAGS=-Wall -g -D_GNU_SOURCE -fpic -Wno-unused-variable -Wno-unused-but-set-variable
+CFLAGS=-Wall -g -D_GNU_SOURCE -fpic -Wno-unused-variable -Wno-unused-but-set-variable #-DLINUX_BUILD
 CC=gcc $(CFLAGS) $(INCLUDE_PATHS)
 
 all: $(OBJECTS) libtestiojni.so ctest loader.so
