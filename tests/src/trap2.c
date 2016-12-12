@@ -18,28 +18,27 @@
 #include "lwc.h"
 
 static char *sbuf;
-static int parent_lwc = 0;
-static int child_lwc = 1;
+static int monitor_lwc = 0;
+static int monitored_lwc = 1;
 
 
 #define strerror(x) (sys_errlist[x])
 //#define fprintf(...)
 
-void parent_loop() {
-
-
-	register_t to_args[11];
-	register_t from_args[11];
-	int num_from = 11;
-	int src;
-	if (lwcswitch(sbuf[child_lwc], to_args, 0, &src, from_args, &num_from) == LWC_FAILED) {
-		perror("LWC suspend in parent failed: ");
-		exit(1);
-	}
+void parent_loop(int ret, int src, register_t *to_args, register_t *from_args, int num_from) {
 
 	while(1) {
+
+		if (ret == LWC_FAILED) {
+			perror("LWC failed in suspend\n");
+			exit(2);
+		} else if (ret != LWC_TRAPPED) {
+			fprintf(stderr, "Got into refmon but didn't get trap retval, got %d instead", ret);
+			exit(3);
+		}
+
 		/* handle syscall */
-		register_t to_args[10];
+
 		/* first value is errno, second is return code */
 
 		if (num_from < 1) {
@@ -76,14 +75,7 @@ void parent_loop() {
 		fprintf(stderr, "returning %ld %ld %s\n", to_args[0], to_args[1], strerror(errno));
 
 		num_from = 10;
-		int ret = lwcswitch(sbuf[child_lwc], to_args, 2, NULL, from_args, &num_from);
-		if (ret == LWC_FAILED) {
-			perror("LWC failed in suspend\n");
-			exit(2);
-		} else if (ret != LWC_TRAPPED) {
-			fprintf(stderr, "Got into refmon but didn't get trap retval, got %d instead", ret);
-			exit(3);
-		}
+		ret = lwcswitch(sbuf[monitored_lwc], to_args, 2, NULL, from_args, &num_from);
 	}
 }
 
@@ -109,33 +101,37 @@ int main() {
 	specs[0].sub.descriptors.from = specs[0].sub.descriptors.to = -1;
 
 
-	sbuf[parent_lwc] = lwcgetlwc();
 
-	int new_lwc = lwccreate(specs, 0, NULL, NULL, NULL, LWC_TRAP_SYSCALL);
+	register_t to_args[11];
+	register_t from_args[11];
+	int num_from = 11;
+	int src;
+
+
+	int new_lwc = lwccreate(specs, 0, &src, from_args, &num_from, 0);
 	if (new_lwc >= 0) {
-		sbuf[child_lwc] = new_lwc;
-		parent_loop();
+		sbuf[monitor_lwc] = new_lwc;
+		sbuf[monitored_lwc] = lwcgetlwc();
+
+		int rv = fcntl(new_lwc, F_SETLWC, FLWC_TRAPTO);
+		if (rv) {
+			fprintf(stderr, "fcntl return value was %d: %s\n", rv, strerror(errno));
+			return EXIT_FAILURE;
+		}
+
+		goto inner_main;
+		
 	} else if (new_lwc == LWC_FAILED) {
 		perror("LWC failed\n");
 		return EXIT_FAILURE;
-	}
-
-	if (0) {
-	int pid = fork();
-	if (pid > 0) {
-		/* in parent */
-		int stat;
-		wait(&stat);
-		return EXIT_SUCCESS;
 	} else {
-		// make sure parent gets cleaned up 
-		//sleep(1);
-	}
+		parent_loop(new_lwc, src, to_args, from_args, num_from);
 	}
 
 
-	/* now in child */
 
+
+  inner_main:
 	setuid(1001);
 
 	if (cap_enter()) {

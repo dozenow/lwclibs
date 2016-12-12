@@ -55,13 +55,13 @@ struct lwc_resource_specifier {
 #define LWC_TARGET_SELF	(-1)
 
 /* user visible flags, note, should be disjoint from RETCREATE, etc */
-#define LWC_SUSPEND_ONLY	0x0008
+//#define LWC_SUSPEND_ONLY	0x0008 /* deprecated */
 #define LWC_TRAP_SYSCALL	0x0080
 #define LWC_PREFAULT			0x0100
 
-#define LWC_FAILED (-1)
-#define LWC_SWITCHED (-2)
-
+#define LWC_FAILED	(-1)
+#define LWC_SWITCHED	(-2)
+#define LWC_TRAPPED	(-3)
 
 /* resource types */
 #define LWC_RESOURCE_MEMORY	0x001
@@ -82,12 +82,24 @@ struct lwc_resource_specifier {
 
 #define LWCR_MEMORY	LWC_RESOURCE_MEMORY	
 #define LWCR_FILES	LWC_RESOURCE_FILES		 
-#define LWCR_CREDENT	LWC_RESOURCE_CREDENT	
-
+#define LWCR_CREDENT	LWC_RESOURCE_CREDENT
 
 #ifdef __cplusplus
 }
 #endif
+
+/* this is set in the kernel fcntl.h file, but that may not be
+ * installed in the libc, so replicated here */
+#include <fcntl.h>
+#ifndef F_SETLWC
+#define F_SETLWC 19
+#define FLWC_TRAPTO 1
+#endif
+
+
+
+
+
 
 
 #endif
