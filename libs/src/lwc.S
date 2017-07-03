@@ -7,7 +7,15 @@
 
 .text
 
+	/*
+global lwccreate:function, lwcswitch:function, 	lwcoverlay:function
+global lwcrestrict:function, lwcsyscall:function, lwcgetlwc:function
+global lwcjoin:function, lwcleave:function, lwctrycommit:function
+*/
+
+
 .globl lwccreate
+.type lwccreate, "function"
 lwccreate:
    push   %rbp
    mov    %rsp,%rbp
@@ -29,6 +37,7 @@ out_c:
    retq
     
 .globl lwcswitch
+.type lwcswitch, "function"
 lwcswitch:  
    push   %rbp
    mov    %rsp,%rbp
@@ -50,6 +59,7 @@ out_swx:
    retq
 
 .globl lwcoverlay
+.type lwcoverlay, "function"
 lwcoverlay: 
    push   %rbp
    mov    %rsp,%rbp
@@ -68,6 +78,7 @@ out_ovl:
    retq
 
 .globl lwcrestrict
+.type lwcrestrict, "function"
 lwcrestrict: 
    push   %rbp
    mov    %rsp,%rbp
@@ -87,6 +98,7 @@ out_res:
 
 
 .globl lwcsyscall
+.type lwcsyscall, "function"
 lwcsyscall: 
    push   %rbp
    mov    %rsp,%rbp
@@ -102,6 +114,7 @@ out_lwsy:
 
    
 .globl lwcgetlwc
+.type lwcgetlwc, "function"
 lwcgetlwc: 
    push   %rbp
    mov    %rsp,%rbp
@@ -116,15 +129,46 @@ out_lwget:
    retq
 
 
-.globl lwcclose
-lwcclose: 
+.globl lwcjoin
+.type lwcjoin, "function"
+lwcjoin: 
    push   %rbp
    mov    %rsp,%rbp
    /* one argument */
    mov    $556,%eax
    mov    %rcx,%r10
    syscall
-   jnc out_lwsc
+   jnc out_lwjoin
+   DO_ERR
+out_lwjoin:
+   pop    %rbp
+   retq
+
+.globl lwcleave
+.type lwcleave, "function"
+lwcleave: 
+   push   %rbp
+   mov    %rsp,%rbp
+   /* two arguments */
+   mov    $557,%eax
+   mov    %rcx,%r10
+   syscall
+   jnc out_lwlv
+   DO_ERR
+out_lwlv:
+   pop    %rbp
+   retq
+
+.globl lwctrycommit
+.type lwctrycommit, "function"
+lwctrycommit:  
+   push   %rbp
+   mov    %rsp,%rbp
+   /* two arguments */
+   mov    $558,%eax
+   mov    %rcx,%r10
+   syscall
+   jnc out_lwtc
    DO_ERR
 out_lwsc:
    pop    %rbp
