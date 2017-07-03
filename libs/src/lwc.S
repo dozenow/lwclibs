@@ -170,7 +170,7 @@ lwctrycommit:
    syscall
    jnc out_lwtc
    DO_ERR
-out_lwsc:
+out_lwtc:
    pop    %rbp
    retq
 
